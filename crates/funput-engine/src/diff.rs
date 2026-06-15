@@ -4,7 +4,7 @@
 ///
 /// Returns `(backspace, output)` where the platform deletes `backspace` chars
 /// then injects `output`.
-pub fn diff(old: &str, new: &str) -> (usize, String) {
+pub(crate) fn diff(old: &str, new: &str) -> (usize, String) {
     let old_chars: Vec<char> = old.chars().collect();
     let new_chars: Vec<char> = new.chars().collect();
 

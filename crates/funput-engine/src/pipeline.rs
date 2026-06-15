@@ -7,7 +7,7 @@ use crate::result::ImeResult;
 use crate::session::Session;
 
 /// Apply one keystroke to `session` and return platform instructions.
-pub fn process(session: &mut Session, key: char) -> ImeResult {
+pub(crate) fn process(session: &mut Session, key: char) -> ImeResult {
     let result = apply(&session.buffer, key, session.method);
 
     match result.kind {

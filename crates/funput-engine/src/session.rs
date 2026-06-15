@@ -2,21 +2,21 @@
 
 use funput_core::InputMethod;
 
-/// Mutable session held by [`crate::Engine`].
+/// Mutable session held by [`crate::Engine`]. Internal — not part of the public API.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Session {
-    pub enabled: bool,
-    pub method: InputMethod,
+pub(crate) struct Session {
+    pub(crate) enabled: bool,
+    pub(crate) method: InputMethod,
     /// Composed text currently shown in the app (the composition span).
-    pub buffer: String,
+    pub(crate) buffer: String,
     /// Raw keystrokes since the last word boundary. Lets English restore
     /// (phase E3) rebuild the original Latin text when the composed buffer is
     /// not a complete Vietnamese syllable (`keys != buffer && !is_complete_syllable(buffer)`).
-    pub keys: String,
+    pub(crate) keys: String,
 }
 
 impl Session {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             enabled: true,
             method: InputMethod::Telex,
@@ -25,7 +25,7 @@ impl Session {
         }
     }
 
-    pub fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) {
         self.buffer.clear();
         self.keys.clear();
     }

@@ -1,13 +1,17 @@
 //! Platform action and inject payload after one keystroke.
+//!
+//! Part of the **API FROZEN** surface (Phase E4). `funput-ffi` marshals [`ImeResult`]
+//! into a fixed-size C struct at the FFI boundary.
 
 /// What the platform shell should do with the current key event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
     /// Pass the key through to the app — no inject.
     None,
-    /// Delete `backspace` chars in the app, then inject `output`.
+    /// Delete `backspace` chars in the app, then inject `output`. The current key
+    /// is swallowed (not passed through).
     Send,
-    /// Restore pre-composition text (e.g. ESC) — phase E5+.
+    /// Restore pre-composition text (e.g. ESC) — reserved for phase E5+.
     Restore,
 }
 
@@ -18,6 +22,7 @@ pub enum Action {
 /// at the FFI boundary — the 32-char / `u8` limits live there, not here.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ImeResult {
+    /// Platform action for this keystroke.
     pub action: Action,
     /// Characters to delete before injecting `output`.
     pub backspace: usize,
@@ -27,7 +32,7 @@ pub struct ImeResult {
 
 impl ImeResult {
     /// No platform inject — pass the key through.
-    pub fn none() -> Self {
+    pub(crate) fn none() -> Self {
         Self {
             action: Action::None,
             backspace: 0,
@@ -35,8 +40,9 @@ impl ImeResult {
         }
     }
 
-    /// Delete `backspace` chars, then inject `output`.
-    pub fn send(backspace: usize, output: String) -> Self {
+    /// Delete `backspace` chars, then inject `output`. The key that triggered this
+    /// result is swallowed by the platform.
+    pub(crate) fn send(backspace: usize, output: String) -> Self {
         Self {
             action: Action::Send,
             backspace,

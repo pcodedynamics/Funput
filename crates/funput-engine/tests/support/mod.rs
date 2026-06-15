@@ -5,7 +5,8 @@
 use funput_core::InputMethod;
 use funput_engine::{Action, Engine, ImeResult};
 
-pub fn type_keys(method: InputMethod, keys: &str) -> (String, Vec<ImeResult>) {
+/// Type keys through a fresh [`Engine`]; returns final buffer + per-step [`ImeResult`].
+pub fn type_keys_with_results(method: InputMethod, keys: &str) -> (String, Vec<ImeResult>) {
     let mut engine = Engine::new();
     engine.set_method(method);
     let mut results = Vec::new();
@@ -15,8 +16,13 @@ pub fn type_keys(method: InputMethod, keys: &str) -> (String, Vec<ImeResult>) {
     (engine.buffer().to_owned(), results)
 }
 
+/// Short alias for [`type_keys_with_results`].
+pub fn type_keys(method: InputMethod, keys: &str) -> (String, Vec<ImeResult>) {
+    type_keys_with_results(method, keys)
+}
+
 pub fn type_keys_buffer(method: InputMethod, keys: &str) -> String {
-    type_keys(method, keys).0
+    type_keys_with_results(method, keys).0
 }
 
 /// Type space-separated words; simulates engine word-boundary clear between words.

@@ -2,6 +2,8 @@
 
 Crate **điều phối** — nhận sự kiện phím theo thời gian, giữ buffer, gọi `funput-core`, trả kết quả cho platform inject.
 
+**API FROZEN (Phase E4)** — public surface: `Engine`, `Action`, `ImeResult`.
+
 ## Ý nghĩa
 
 `funput-core` trả lời “chuỗi này transform thành gì”.  
@@ -17,9 +19,8 @@ Crate **điều phối** — nhận sự kiện phím theo thời gian, giữ bu
 | Gọi `funput-core` khi có key mới | Inject Backspace / Unicode vào app |
 | Tính `backspace` count (buffer cũ vs mới) | UI settings, menu bar |
 | Trả `ImeResult` cho platform | Logic Telex/VNI chi tiết |
-| Word boundary (`ime_clear` khi Space, Enter) | C ABI export (thuộc `funput-ffi`) |
-| Bật/tắt engine, đổi Telex/VNI | Auto-restore tiếng Anh (có thể ở đây hoặc module riêng trong engine) |
-| Shortcut / gõ tắt (phase 2) | Đọc file config (platform hoặc crate riêng sau) |
+| Word boundary + English restore | C ABI export (thuộc `funput-ffi`) |
+| Bật/tắt engine, đổi Telex/VNI | Shortcut / gõ tắt (phase 2) |
 
 ## `ImeResult` — contract với platform
 
@@ -29,7 +30,7 @@ Struct trung tâm mà mọi platform shell consume:
 pub enum Action {
     None,    // Pass key through — không transform
     Send,    // Transform — platform phải inject
-    Restore, // Hoàn nguyên buffer (ví dụ ESC)
+    Restore, // Hoàn nguyên buffer (ví dụ ESC, E5+)
 }
 
 pub struct ImeResult {
@@ -48,9 +49,9 @@ Platform đọc `ImeResult` rồi quyết định **cách inject** (Backspace, S
 ## Luồng xử lý một phím
 
 ```
-1. Platform gọi engine.process_key(keycode, modifiers)
-2. Engine cập nhật buffer
-3. Engine gọi funput-core transform
+1. Platform gọi engine.process_char(key)
+2. Engine cập nhật buffer / keys
+3. Engine gọi funput-core transform (hoặc boundary restore)
 4. Engine so sánh buffer trước / sau → tính backspace + output
 5. Trả ImeResult
 ```
@@ -64,22 +65,24 @@ Platform đọc `ImeResult` rồi quyết định **cách inject** (Backspace, S
 
 Platform nhận bước 2: xóa 1 ký tự, inject `á`, nuốt key `s`.
 
-## Cấu trúc module (hiện tại — E2)
+## Cấu trúc module (E4)
 
 ```
 funput-engine/src/
-├── lib.rs                # Engine, re-exports
+├── lib.rs                # Engine, API FROZEN, re-exports
 ├── result.rs             # Action, ImeResult
 ├── session.rs            # enabled, method, buffer, keys
-├── boundary.rs           # word boundary → clear + English restore (E3)
+├── boundary.rs           # word boundary + English restore
 ├── pipeline.rs           # TransformKind → ImeResult
 └── diff.rs               # buffer diff → backspace + output
 
 tests/
-├── support/mod.rs        # type_keys, type_words
+├── support/mod.rs        # type_keys_with_results, app_text, …
+├── fixtures/step_cases.rs
+├── engine_fixtures.rs    # engine_full_regression
 ├── telex_steps.rs
 ├── vni_steps.rs
-└── word_boundary.rs
+├── word_boundary.rs
 └── english_restore.rs
 ```
 
@@ -101,14 +104,15 @@ Platform macOS/Windows **không** import trực tiếp — đi qua `funput-ffi`.
 
 ## Hiện thực
 
-Xem [IMPLEMENTATION.md](./IMPLEMENTATION.md) — roadmap theo phase E0–E4.
+Xem [IMPLEMENTATION.md](./IMPLEMENTATION.md) — roadmap E0–E4 hoàn tất; tiếp theo `funput-cli`.
 
 ## Tests
 
 ```bash
 cargo test -p funput-engine
 cargo clippy -p funput-engine -- -D warnings
+cargo doc -p funput-engine --no-deps
 ```
 
-**E3:** Trên boundary, nếu `keys != buffer && !is_valid(buffer)` → `Send` restore Latin
-(`output = keys + boundary_key`); âm tiết VN hợp lệ (`má`) giữ composed.
+**E4:** Fixture regression (`engine_full_regression`) — buffer parity Telex/VNI với core,
+step vectors (`as`, `dd`, `card ` restore), app-text multi-word + English restore.

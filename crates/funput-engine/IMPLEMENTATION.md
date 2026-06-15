@@ -33,7 +33,7 @@ Core **không** tính `backspace`. Engine diff `buffer` trước/sau mỗi lần
 
 ---
 
-## Cấu trúc module (dự kiến)
+## Cấu trúc module (E4)
 
 ```
 crates/funput-engine/
@@ -41,17 +41,20 @@ crates/funput-engine/
 ├── README.md
 ├── IMPLEMENTATION.md          ← tài liệu này
 ├── src/
-│   ├── lib.rs                 # Public API: Engine, process_char
-│   ├── result.rs              # Action, ImeResult (Rust-native; ffi marshals to C)
-│   ├── session.rs             # enabled, method, buffer, keys (raw keystrokes)
+│   ├── lib.rs                 # API FROZEN — Engine, process_char
+│   ├── result.rs              # Action, ImeResult
+│   ├── session.rs             # enabled, method, buffer, keys
+│   ├── boundary.rs            # word boundary + English restore
 │   ├── pipeline.rs            # TransformKind → ImeResult
-│   └── diff.rs                # buffer diff → (backspace: usize, output: String)
+│   └── diff.rs                # buffer diff → (backspace, output)
 └── tests/
-    ├── support.rs             # type_keys → Vec<ImeResult>
-    ├── telex_steps.rs         # Step-by-step Telex vectors
-    ├── vni_steps.rs           # Step-by-step VNI vectors
-    └── fixtures/
-        └── step_cases.rs      # (keys, expected steps) Rust const
+    ├── support/mod.rs         # type_keys_with_results, app_text
+    ├── fixtures/step_cases.rs # buffer + step + app-text vectors
+    ├── engine_fixtures.rs     # engine_full_regression
+    ├── telex_steps.rs
+    ├── vni_steps.rs
+    ├── word_boundary.rs
+    └── english_restore.rs
 ```
 
 ---
@@ -88,6 +91,7 @@ impl Engine {
     pub fn set_method(&mut self, method: funput_core::InputMethod);
     pub fn clear(&mut self);
     pub fn buffer(&self) -> &str;
+    pub fn keys(&self) -> &str;
 
     /// Process one Unicode scalar (platform maps keycode → char).
     pub fn process_char(&mut self, key: char) -> ImeResult;
@@ -329,10 +333,13 @@ lenient) — tại boundary từ đã gõ xong nên coda phải là phụ âm cu
 
 ### Done khi
 
-- [ ] `cargo test -p funput-engine` — 100% pass
-- [ ] `cargo clippy -p funput-engine -- -D warnings`
-- [ ] `cargo doc -p funput-engine --no-deps`
-- [ ] Sẵn sàng bắt `funput-cli`
+- [x] `# API FROZEN` + doc trên `Engine`, `Action`, `ImeResult`
+- [x] `support::type_keys_engine`, `type_keys_with_results`
+- [x] `fixtures/step_cases.rs` + `engine_fixtures.rs` + `engine_full_regression`
+- [x] `cargo test -p funput-engine` pass
+- [x] `cargo clippy -p funput-engine -- -D warnings`
+- [x] `cargo doc -p funput-engine --no-deps`
+- [x] Sẵn sàng bắt `funput-cli`
 
 ---
 
@@ -440,6 +447,6 @@ flowchart TD
 | E1 Pipeline | ✅ |
 | E2 Word boundary | ✅ |
 | E3 English restore | ✅ |
-| E4 API freeze | ⬜ |
+| E4 API freeze | ✅ |
 | E5 ESC Restore | ⬜ optional |
 | E6 Backspace sync | ⬜ optional |

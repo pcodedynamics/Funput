@@ -9,7 +9,7 @@ use crate::session::Session;
 /// punctuation. Digits are *not* boundaries — VNI uses `1`–`9` as modifiers.
 ///
 /// v1 ignores non-ASCII punctuation (em dash, smart quotes, guillemets).
-pub fn is_word_boundary(key: char) -> bool {
+pub(crate) fn is_word_boundary(key: char) -> bool {
     key.is_whitespace() || key.is_ascii_punctuation()
 }
 
@@ -32,7 +32,7 @@ fn english_restore_result(session: &Session, boundary_key: char) -> ImeResult {
 }
 
 /// End-of-word: optionally restore English Latin text, then reset composition state.
-pub fn on_word_boundary(session: &mut Session, boundary_key: char) -> ImeResult {
+pub(crate) fn on_word_boundary(session: &mut Session, boundary_key: char) -> ImeResult {
     let result = if should_restore(session) {
         english_restore_result(session, boundary_key)
     } else {
