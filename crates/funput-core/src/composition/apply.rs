@@ -86,7 +86,7 @@ pub(crate) fn apply_shape_key(buffer: &str, shape: VowelShape) -> TransformResul
 }
 
 /// Char indices of an adjacent plain `uo` pair inside the vowel cluster.
-fn uo_pair_in_vowel_cluster(buffer: &str) -> Option<(usize, usize)> {
+pub(crate) fn uo_pair_in_vowel_cluster(buffer: &str) -> Option<(usize, usize)> {
     let chars: Vec<char> = buffer.chars().collect();
     let start = chars.iter().position(|c| is_vowel(*c))?;
     let mut indices = Vec::new();

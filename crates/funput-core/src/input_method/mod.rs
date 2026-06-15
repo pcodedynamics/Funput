@@ -4,7 +4,11 @@
 //! composition pipeline in [`crate::composition`] is method-agnostic and only
 //! ever sees [`KeyAction`]s. Adding a method means adding a classifier module
 //! here — nothing downstream changes.
+//!
+//! Classifiers take the current syllable buffer because Telex digraphs (`aa`,
+//! `dd`, `w` after a vowel) depend on context; VNI ignores the buffer.
 
+pub mod telex;
 pub mod vni;
 
 use crate::unicode::marks::Tone;

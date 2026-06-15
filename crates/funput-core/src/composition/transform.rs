@@ -1,13 +1,13 @@
 //! Transform pipeline: classify a key, then orchestrate revert → validate → apply.
 //!
-//! [`apply_action`] is method-agnostic; only [`classify_key`] is VNI-specific, so
-//! a future Telex classifier can reuse the whole pipeline.
+//! [`apply_action`] is method-agnostic; only the input-method classifier differs.
 
 use crate::composition::apply::{
     apply_shape_key, apply_stroke, apply_tone_key, shape_apply_target_exists,
 };
 use crate::composition::revert::{try_revert_shape, try_revert_stroke, try_revert_tone};
-use crate::input_method::vni::classify_key;
+use crate::input_method::telex;
+use crate::input_method::vni;
 use crate::input_method::KeyAction;
 use crate::unicode::tone_position::reposition_existing_tone;
 use crate::validation::syllable::{
@@ -38,7 +38,12 @@ fn validation_gate(buffer: &str, key: char, validation: ModifierValidation) -> O
 
 /// Apply one VNI keystroke to `buffer`.
 pub(crate) fn apply_vni(buffer: &str, key: char) -> TransformResult {
-    apply_action(buffer, key, classify_key(key))
+    apply_action(buffer, key, vni::classify_key(buffer, key))
+}
+
+/// Apply one Telex keystroke to `buffer`.
+pub(crate) fn apply_telex(buffer: &str, key: char) -> TransformResult {
+    apply_action(buffer, key, telex::classify_key(buffer, key))
 }
 
 /// Apply a classified key action to `buffer`.

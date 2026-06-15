@@ -1,7 +1,7 @@
 //! Pure Vietnamese input transform — one keystroke at a time.
 //!
 //! `funput-core` answers: given the current syllable buffer and a key, what is the
-//! new text according to VNI (or Telex when implemented)?
+//! new text according to VNI or Telex?
 //!
 //! # API FROZEN (Phase 8)
 //!
@@ -27,7 +27,7 @@ mod validation;
 pub enum InputMethod {
     /// VNI digit modifiers (`1`–`9`).
     Vni,
-    /// Telex (Phase 9 — currently appends keys as [`TransformKind::Pending`] only).
+    /// Telex letter modifiers (`s`/`f`/`r`/`x`/`j`, `aa`/`dd`/`w`, …).
     Telex,
 }
 
@@ -73,10 +73,7 @@ pub struct TransformResult {
 pub fn apply(buffer: &str, key: char, method: InputMethod) -> TransformResult {
     match method {
         InputMethod::Vni => composition::transform::apply_vni(buffer, key),
-        InputMethod::Telex => TransformResult {
-            kind: TransformKind::Pending,
-            text: format!("{buffer}{key}"),
-        },
+        InputMethod::Telex => composition::transform::apply_telex(buffer, key),
     }
 }
 
@@ -97,13 +94,13 @@ mod tests {
     }
 
     #[test]
-    fn apply_telex_appends_pending() {
-        let result = apply("he", 'l', InputMethod::Telex);
+    fn apply_telex_tone() {
+        let result = apply("a", 's', InputMethod::Telex);
         assert_eq!(
             result,
             TransformResult {
-                kind: TransformKind::Pending,
-                text: "hel".into(),
+                kind: TransformKind::Applied,
+                text: "á".into(),
             }
         );
     }

@@ -1,0 +1,98 @@
+mod support;
+
+use funput_core::{apply, InputMethod, TransformKind, TransformResult};
+
+fn type_keys(keys: &str) -> String {
+    support::type_keys(InputMethod::Telex, keys)
+}
+
+#[test]
+fn telex_stroke_and_tone_basics() {
+    assert_eq!(type_keys("dd"), "đ");
+    assert_eq!(type_keys("DD"), "Đ");
+    assert_eq!(type_keys("as"), "á");
+    assert_eq!(type_keys("af"), "à");
+    assert_eq!(type_keys("ar"), "ả");
+    assert_eq!(type_keys("ax"), "ã");
+    assert_eq!(type_keys("aj"), "ạ");
+    assert_eq!(type_keys("mas"), "má");
+}
+
+#[test]
+fn telex_shape_basics() {
+    assert_eq!(type_keys("aa"), "â");
+    assert_eq!(type_keys("ee"), "ê");
+    assert_eq!(type_keys("oo"), "ô");
+    assert_eq!(type_keys("ow"), "ơ");
+    assert_eq!(type_keys("uw"), "ư");
+    assert_eq!(type_keys("aw"), "ă");
+    assert_eq!(type_keys("uow"), "ươ");
+}
+
+#[test]
+fn telex_shape_then_tone() {
+    assert_eq!(type_keys("oos"), "ố");
+    assert_eq!(type_keys("aas"), "ấ");
+}
+
+#[test]
+fn telex_reposition() {
+    assert_eq!(type_keys("hoaf"), "hoà");
+    assert_eq!(type_keys("thuyr"), "thuỷ");
+    assert_eq!(type_keys("hoaff"), "hoa");
+}
+
+#[test]
+fn telex_revert() {
+    assert_eq!(type_keys("ass"), "a");
+    assert_eq!(type_keys("aaa"), "a");
+    assert_eq!(type_keys("ddd"), "d");
+    assert_eq!(type_keys("aas"), "ấ");
+    assert_eq!(type_keys("aass"), "â");
+}
+
+#[test]
+fn telex_multi_syllable_words() {
+    assert_eq!(
+        support::type_words(InputMethod::Telex, "xins chaof banj"),
+        "xín chào bạn"
+    );
+}
+#[test]
+fn telex_complex_syllables() {
+    assert_eq!(type_keys("truowng"), "trương");
+    assert_eq!(type_keys("nguwowif"), "người");
+    assert_eq!(type_keys("vietj"), "việt");
+    assert_eq!(type_keys("truwownfg"), "trường");
+    assert_eq!(type_keys("nuocws"), "nước");
+}
+
+#[test]
+fn telex_validation_and_pass_through() {
+    // A tone letter with no vowel to land on is kept literally, not dropped.
+    assert_eq!(
+        apply("ng", 's', InputMethod::Telex),
+        TransformResult {
+            kind: TransformKind::Pending,
+            text: "ngs".into(),
+        }
+    );
+    assert_eq!(
+        apply("text", 's', InputMethod::Telex),
+        TransformResult {
+            kind: TransformKind::Pending,
+            text: "texts".into(),
+        }
+    );
+    // Leading `f`/`j` and English words keep every keystroke (engine restores).
+    assert_eq!(type_keys("file"), "file");
+    assert_eq!(type_keys("from"), "from");
+    assert_eq!(type_keys("just"), "just");
+    assert_eq!(
+        apply("a", 'b', InputMethod::Telex),
+        TransformResult {
+            kind: TransformKind::Pending,
+            text: "ab".into(),
+        }
+    );
+}

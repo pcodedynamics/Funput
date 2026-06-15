@@ -34,7 +34,7 @@ pub fn shape_from_digit(key: char) -> Option<VowelShape> {
 }
 
 /// Classify a VNI keystroke into a method-agnostic [`KeyAction`].
-pub fn classify_key(key: char) -> KeyAction {
+pub fn classify_key(_buffer: &str, key: char) -> KeyAction {
     match key {
         '9' => KeyAction::Stroke,
         '1'..='5' => KeyAction::Tone(tone_from_digit(key).expect("digit 1-5")),
@@ -49,16 +49,16 @@ mod tests {
 
     #[test]
     fn classify_stroke_and_tones() {
-        assert_eq!(classify_key('9'), KeyAction::Stroke);
-        assert_eq!(classify_key('1'), KeyAction::Tone(Tone::Sac));
-        assert_eq!(classify_key('5'), KeyAction::Tone(Tone::Nang));
-        assert_eq!(classify_key('m'), KeyAction::Normal);
+        assert_eq!(classify_key("", '9'), KeyAction::Stroke);
+        assert_eq!(classify_key("", '1'), KeyAction::Tone(Tone::Sac));
+        assert_eq!(classify_key("", '5'), KeyAction::Tone(Tone::Nang));
+        assert_eq!(classify_key("", 'm'), KeyAction::Normal);
     }
 
     #[test]
     fn classify_shapes() {
-        assert_eq!(classify_key('6'), KeyAction::Shape(VowelShape::Circumflex));
-        assert_eq!(classify_key('7'), KeyAction::Shape(VowelShape::Horn));
-        assert_eq!(classify_key('8'), KeyAction::Shape(VowelShape::Breve));
+        assert_eq!(classify_key("", '6'), KeyAction::Shape(VowelShape::Circumflex));
+        assert_eq!(classify_key("", '7'), KeyAction::Shape(VowelShape::Horn));
+        assert_eq!(classify_key("", '8'), KeyAction::Shape(VowelShape::Breve));
     }
 }
