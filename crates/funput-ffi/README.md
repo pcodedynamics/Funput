@@ -18,70 +18,64 @@ Linux Fcitx5 có thể link `funput-engine` trực tiếp và **không cần** c
 | Thread-safe singleton engine (nếu cần) | Inject text vào app |
 | `cbindgen` / header generation | Fcitx5 integration |
 
-## API dự kiến (C ABI)
+## API (C ABI — `include/funput.h`)
+
+Handle-based, kết quả trả **theo giá trị** (không cần free), input là **codepoint**
+(platform tự map keycode→char):
 
 ```c
-// Initialize once at app startup
-void ime_init(void);
+typedef struct FunputEngine FunputEngine;   // opaque handle
 
-// Process one keystroke
-ImeResult* ime_key(uint16_t keycode, bool caps, bool ctrl);
-
-// Configuration
-void ime_method(uint8_t method);   // 0=Telex, 1=VNI
-void ime_enabled(bool enabled);
-void ime_clear(void);              // Word boundary
-
-// Caller must free every result from ime_key
-void ime_free(ImeResult* result);
-```
-
-```c
 typedef struct {
-    uint32_t chars[32];
-    uint8_t  action;      // 0=None, 1=Send, 2=Restore
-    uint8_t  backspace;
-    uint8_t  count;
-    uint8_t  _pad;
-} ImeResult;
+    uint8_t  action;        // 0=None, 1=Send, 2=Restore
+    uint32_t backspace;     // số ký tự xoá trước khi inject
+    uint32_t count;         // số codepoint hợp lệ trong chars (<= 64)
+    uint32_t chars[64];     // UTF-32 output; chars[0..count] valid
+} FunputResult;
+
+FunputEngine* funput_engine_new(void);
+void          funput_engine_free(FunputEngine*);
+void          funput_set_method(FunputEngine*, uint8_t method);   // 0=Telex, 1=VNI
+void          funput_set_enabled(FunputEngine*, bool enabled);
+void          funput_clear(FunputEngine*);                        // word boundary
+FunputResult  funput_process_char(FunputEngine*, uint32_t codepoint);
 ```
+
+Mọi hàm **null-safe**. Header sinh bằng `cbindgen` (xem `scripts/gen-header.sh`).
 
 ## Luồng trên macOS (ví dụ)
 
 ```
 CGEventTap callback (Swift)
-       ↓
-RustBridge.processKey(keycode, flags)
-       ↓
-ime_key()                    ← funput-ffi
+       ↓ keycode → codepoint (platform map)
+funput_process_char(engine, cp)    ← funput-ffi
        ↓
 funput-engine
        ↓
-ImeResult* → Swift đọc backspace + chars
+FunputResult (by value) → Swift đọc action / backspace / chars[0..count]
        ↓
 Inject layer (Backspace / AX-sync)   ← ngoài funput-ffi
-       ↓
-ime_free(result)
 ```
 
 ## Memory ownership
 
 | Bên | Trách nhiệm |
 |-----|------------|
-| Rust (`ime_key`) | Allocate `ImeResult` |
-| Caller (Swift/C#) | Gọi `ime_free()` đúng một lần mỗi result |
-| Rust (`ime_init`) | Init engine một lần, thread-safe |
+| Rust (`funput_engine_new`) | Cấp phát handle |
+| Caller (Swift/C#) | Gọi `funput_engine_free()` đúng một lần mỗi handle |
+| `funput_process_char` | Trả **by value** — **không** cấp phát, **không** free per-result |
 
-Caller **phải** free — thường dùng `defer ime_free(ptr)` trong Swift.
+Chỉ cần free **handle** (thường `defer funput_engine_free(e)` trong Swift). Result là POD trên stack → không rò rỉ.
 
-## Cấu trúc module (dự kiến)
+## Cấu trúc module
 
 ```
-funput-ffi/src/
-├── lib.rs                # extern "C" exports
-├── types.rs              # #[repr(C)] ImeResult
-└── include/
-    └── funput.h          # Generated via cbindgen
+funput-ffi/
+├── src/lib.rs            # extern "C" exports + opaque FunputEngine
+├── src/types.rs          # #[repr(C)] FunputResult + from_ime()
+├── cbindgen.toml
+├── scripts/gen-header.sh
+└── include/funput.h      # Generated via cbindgen (committed)
 ```
 
 ## Build output

@@ -1,0 +1,13 @@
+[package]
+name = "funput-ffi"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+# cdylib: .dylib/.so/.dll for native shells. staticlib: .a/.lib for static linking.
+# rlib: lets the round-trip tests call the extern "C" functions in-process.
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+funput-core = { path = "../funput-core" }
+funput-engine = { path = "../funput-engine" }
