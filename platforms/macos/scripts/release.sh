@@ -47,6 +47,7 @@ DERIVED="$OUT/DerivedData"
 ARCHIVE="$OUT/Funput.xcarchive"
 EXPORT="$OUT/export"
 APP="$EXPORT/Funput.app"
+mkdir -p "$OUT" # fresh checkout (CI) has no build/ yet; logs + zip + dmg land here
 
 # --- 1. Version (names the DMG) -------------------------------------------------
 if [ -z "${VERSION:-}" ]; then
@@ -89,6 +90,7 @@ rm -rf "$ARCHIVE" "$EXPORT" "$OUT/dmg" "$DMG"
 # happened in early CI runs).
 run_xcode() {
     log="$OUT/xcodebuild.log"
+    mkdir -p "$OUT"
     if ! "$@" >"$log" 2>&1; then
         echo "xcodebuild failed:" >&2
         tail -n 40 "$log" >&2
