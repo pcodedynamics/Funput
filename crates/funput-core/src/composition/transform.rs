@@ -3,7 +3,7 @@
 //! [`apply_action`] is method-agnostic; only the input-method classifier differs.
 
 use crate::composition::apply::{
-    apply_shape_key, apply_stroke, apply_tone_key, shape_apply_target_exists,
+    apply_shape_key, apply_stroke, apply_tone_key, remove_tone, shape_apply_target_exists,
 };
 use crate::composition::revert::{try_revert_shape, try_revert_stroke, try_revert_tone};
 use crate::input_method::telex;
@@ -83,6 +83,18 @@ pub(crate) fn apply_action(buffer: &str, key: char, action: KeyAction) -> Transf
             validation_gate(buffer, key, validate_shape(buffer))
                 .unwrap_or_else(|| apply_shape_key(buffer, shape))
         }
+        KeyAction::RemoveTone => match remove_tone(buffer) {
+            // Tone stripped (keeps shape): `viết` + `z`/`0` → `viêt`.
+            Some(text) => TransformResult {
+                kind: TransformKind::Applied,
+                text,
+            },
+            // No tone to remove → the key is a literal (digit `0`, letter `z`).
+            None => TransformResult {
+                kind: TransformKind::Pending,
+                text: format!("{buffer}{key}"),
+            },
+        },
         KeyAction::Normal => {
             let text = format!("{buffer}{key}");
             match reposition_existing_tone(&text) {
@@ -136,9 +148,35 @@ mod tests {
     }
 
     #[test]
+    fn remove_tone_vni() {
+        assert_eq!(type_keys("a1"), "á");
+        assert_eq!(type_keys("a10"), "a"); // 0 removes the tone
+        assert_eq!(type_keys("a610"), "â"); // keeps the circumflex shape
+        assert_eq!(type_keys("vie65t1"), "viết");
+        assert_eq!(type_keys("vie65t10"), "viêt"); // tone gone, ê kept
+        assert_eq!(type_keys("a0"), "a0"); // no tone → literal digit
+    }
+
+    #[test]
+    fn remove_tone_telex() {
+        let telex = |keys: &str| {
+            let mut buf = String::new();
+            for key in keys.chars() {
+                buf = apply_telex(&buf, key).text;
+            }
+            buf
+        };
+        assert_eq!(telex("as"), "á");
+        assert_eq!(telex("asz"), "a"); // z removes the tone
+        assert_eq!(telex("aasz"), "â"); // keeps â
+        assert_eq!(telex("vieetjz"), "viêt"); // việt → remove tone → viêt
+        assert_eq!(telex("z"), "z"); // no tone → literal z
+    }
+
+    #[test]
     fn reposition_and_complex() {
-        assert_eq!(type_keys("hoa2"), "hoà");
-        assert_eq!(type_keys("thuy3"), "thuỷ");
+        assert_eq!(type_keys("hoa2"), "hòa");
+        assert_eq!(type_keys("thuy3"), "thủy");
         assert_eq!(type_keys("hoaf2"), "hoàf");
         assert_eq!(type_keys("tru7o7n2g"), "trường");
         assert_eq!(type_keys("vie5t"), "việt");

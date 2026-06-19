@@ -38,12 +38,13 @@ fn vni_ng1_literal_ignored() {
 
 #[test]
 fn vni_reposition_multi_char_output() {
-    // "to1a": tone lands on `o` (`tó`), then `a` moves it onto `a` (`toá`).
-    // The final step deletes `ó` and injects two chars `oá`.
-    let (buffer, results) = support::type_keys(InputMethod::Vni, "to1a");
-    assert_eq!(buffer, "toá");
+    // "to1an": `1` puts sắc on `o` (`tó`); the open `oa` keeps it there (`tóa`,
+    // traditional rule), then the coda `n` moves it onto `a` (`toán`) — deleting
+    // `óa` and injecting `oán`.
+    let (buffer, results) = support::type_keys(InputMethod::Vni, "to1an");
+    assert_eq!(buffer, "toán");
     let last = results.last().unwrap();
     assert_eq!(last.action, Action::Send);
-    assert_eq!(last.backspace, 1);
-    assert_eq!(last.output, "oá");
+    assert_eq!(last.backspace, 2);
+    assert_eq!(last.output, "oán");
 }

@@ -209,6 +209,37 @@ mod tests {
     }
 
     #[test]
+    fn vni_keeps_composed_word_instead_of_exposing_digits() {
+        // VNI: d-9-c composes "đc". It is not a complete syllable, but reverting
+        // would surface the modifier digit ("d9c"), so the composed "đc" is kept.
+        let mut engine = Engine::new();
+        engine.set_method(InputMethod::Vni);
+        for key in "d9c".chars() {
+            engine.process_char(key);
+        }
+        assert_eq!(engine.buffer(), "đc");
+
+        let space = engine.process_char(' ');
+        assert_eq!(space.action, Action::None); // no restore → "đc" committed as-is
+        assert_eq!(engine.buffer(), "");
+    }
+
+    #[test]
+    fn telex_keeps_abbreviation_with_d_stroke() {
+        // Telex: G-D-D composes "GĐ" (Giám đốc). Reverting would give "GDD"; the đ
+        // marks it as intentional Vietnamese, so it is kept across methods.
+        let mut engine = Engine::new(); // Telex by default
+        for key in "GDD".chars() {
+            engine.process_char(key);
+        }
+        assert_eq!(engine.buffer(), "GĐ");
+
+        let space = engine.process_char(' ');
+        assert_eq!(space.action, Action::None);
+        assert_eq!(engine.buffer(), "");
+    }
+
+    #[test]
     fn word_boundary_on_empty_buffer() {
         let mut engine = Engine::new();
         let result = engine.process_char(' ');

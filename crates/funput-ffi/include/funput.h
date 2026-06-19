@@ -96,6 +96,19 @@ void funput_clear(FunputEngine *engine);
 FunputResult funput_process_char(FunputEngine *engine, uint32_t codepoint);
 
 /**
+ * Copy the current composed buffer (the text the host shows as marked/underlined
+ * composition) as UTF-32 into `out`, up to `cap` codepoints. Returns the number
+ * of codepoints written.
+ *
+ * Null-safe: a null handle or null `out` yields `0`.
+ *
+ * # Safety
+ * `engine` must be a valid handle or null. `out` must point to writable storage
+ * for at least `cap` `u32` values, or be null.
+ */
+uintptr_t funput_buffer(const FunputEngine *engine, uint32_t *out, uintptr_t cap);
+
+/**
  * Backspace inside the current composition: drop the last composed character so
  * the next keystroke composes against the corrected text (`Phua` ⌫ `s` → `Phú`).
  *

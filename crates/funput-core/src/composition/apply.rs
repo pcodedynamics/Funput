@@ -4,7 +4,7 @@
 //! resolved by a classifier, so VNI and Telex share them unchanged.
 
 use crate::composition::replace_char_at;
-use crate::unicode::marks::{apply_tone_to_vowel, is_vowel, stroke_d, Tone};
+use crate::unicode::marks::{apply_tone_to_vowel, is_vowel, stroke_d, tone_on_vowel, vowel_stem, Tone};
 use crate::unicode::shapes::{apply_shape, apply_shape_to_vowel, shape_target_index, VowelShape};
 use crate::unicode::tone_position::{tone_target_vowel, tone_vowel_index};
 use crate::{TransformKind, TransformResult};
@@ -50,6 +50,15 @@ pub(crate) fn apply_tone_key(buffer: &str, tone: Tone) -> TransformResult {
         kind: TransformKind::Applied,
         text: replace_char_at(buffer, vowel_idx, toned),
     }
+}
+
+/// Remove the tone mark from the syllable, keeping any shape (`việt` → `viêt`,
+/// `toán` → `toan`, `được` → `đươc`). Returns `None` when there is no tone.
+pub(crate) fn remove_tone(buffer: &str) -> Option<String> {
+    let mut chars: Vec<char> = buffer.chars().collect();
+    let idx = chars.iter().position(|&c| tone_on_vowel(c).is_some())?;
+    chars[idx] = vowel_stem(chars[idx])?; // strips tone, keeps shape
+    Some(chars.into_iter().collect())
 }
 
 /// True if `shape` can still be applied to some vowel in `buffer` (the horn

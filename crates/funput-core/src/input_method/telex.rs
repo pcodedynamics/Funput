@@ -5,6 +5,7 @@
 //! | Telex | Action |
 //! |-------|--------|
 //! | `s` / `f` / `r` / `x` / `j` | sắc / huyền / hỏi / ngã / nặng |
+//! | `z` | remove tone mark (xóa dấu) |
 //! | `dd` | stroke `đ` |
 //! | `aa` / `ee` / `oo` | circumflex on `a` / `e` / `o` |
 //! | `w` after `a` | breve `ă` |
@@ -49,6 +50,9 @@ pub fn classify_key(buffer: &str, key: char) -> KeyAction {
     }
     if let Some(action) = classify_revert_circumflex(buffer, key) {
         return action;
+    }
+    if key.eq_ignore_ascii_case(&'z') {
+        return KeyAction::RemoveTone;
     }
     classify_tone(buffer, key).unwrap_or(KeyAction::Normal)
 }
@@ -139,6 +143,13 @@ fn classify_tone(buffer: &str, key: char) -> Option<KeyAction> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn classify_remove_tone() {
+        assert_eq!(classify_key("á", 'z'), KeyAction::RemoveTone);
+        assert_eq!(classify_key("viết", 'z'), KeyAction::RemoveTone);
+        assert_eq!(classify_key("", 'z'), KeyAction::RemoveTone);
+    }
 
     #[test]
     fn classify_tone_keys() {

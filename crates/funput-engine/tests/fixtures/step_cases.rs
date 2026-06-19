@@ -155,7 +155,7 @@ pub const TELEX_BUFFER_CASES: &[BufferCase] = &[
     BufferCase {
         method: InputMethod::Telex,
         keys: "hoaf",
-        output: "hoà",
+        output: "hòa",
         label: "reposition hoaf",
     },
     BufferCase {
@@ -302,7 +302,7 @@ pub const VNI_BUFFER_CASES: &[BufferCase] = &[
     BufferCase {
         method: InputMethod::Vni,
         keys: "hoa2",
-        output: "hoà",
+        output: "hòa",
         label: "reposition hoa2",
     },
     BufferCase {
@@ -314,7 +314,7 @@ pub const VNI_BUFFER_CASES: &[BufferCase] = &[
     BufferCase {
         method: InputMethod::Vni,
         keys: "thuy3",
-        output: "thuỷ",
+        output: "thủy",
         label: "reposition thuy3",
     },
     BufferCase {

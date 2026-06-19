@@ -1,8 +1,8 @@
 //! Round-trip tests: drive the `extern "C"` API exactly like a C caller would.
 
 use funput_ffi::{
-    funput_backspace, funput_clear, funput_engine_free, funput_engine_new, funput_process_char,
-    funput_set_method, FunputResult, ACTION_NONE, ACTION_SEND,
+    funput_backspace, funput_buffer, funput_clear, funput_engine_free, funput_engine_new,
+    funput_process_char, funput_set_method, FunputResult, ACTION_NONE, ACTION_SEND,
 };
 
 fn output(result: &FunputResult) -> String {
@@ -105,6 +105,46 @@ fn null_handle_is_safe() {
         funput_clear(std::ptr::null_mut());
         funput_backspace(std::ptr::null_mut());
         funput_engine_free(std::ptr::null_mut());
+    }
+}
+
+/// Read the composed buffer the way a host renders marked text.
+fn read_buffer(engine: *const funput_ffi::FunputEngine) -> String {
+    let mut out = [0u32; 64];
+    let count = unsafe { funput_buffer(engine, out.as_mut_ptr(), out.len()) };
+    out[..count]
+        .iter()
+        .filter_map(|&c| char::from_u32(c))
+        .collect()
+}
+
+#[test]
+fn buffer_reflects_marked_text() {
+    unsafe {
+        let engine = funput_engine_new();
+        funput_set_method(engine, 1); // VNI
+
+        funput_process_char(engine, 'a' as u32);
+        assert_eq!(read_buffer(engine), "a"); // pending, no tone yet
+
+        funput_process_char(engine, '1' as u32);
+        assert_eq!(read_buffer(engine), "á"); // tone applied in place
+
+        funput_clear(engine);
+        assert_eq!(read_buffer(engine), "");
+
+        funput_engine_free(engine);
+    }
+}
+
+#[test]
+fn buffer_null_safe() {
+    let mut out = [0u32; 8];
+    unsafe {
+        assert_eq!(funput_buffer(std::ptr::null(), out.as_mut_ptr(), out.len()), 0);
+        let engine = funput_engine_new();
+        assert_eq!(funput_buffer(engine, std::ptr::null_mut(), 8), 0);
+        funput_engine_free(engine);
     }
 }
 

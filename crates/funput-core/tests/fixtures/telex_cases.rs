@@ -45,7 +45,7 @@ pub const CASES: &[TelexCase] = &[
     },
     TelexCase {
         keys: "hoaf",
-        output: "hoà",
+        output: "hòa",
         label: "reposition hoaf",
     },
     TelexCase {

@@ -23,6 +23,8 @@ pub enum KeyAction {
     Tone(Tone),
     /// Vowel shape (mũ / móc / trần).
     Shape(VowelShape),
+    /// Remove the tone mark from the syllable, keeping shapes (VNI `0`, Telex `z`).
+    RemoveTone,
     /// Ordinary character — appended as-is.
     Normal,
 }

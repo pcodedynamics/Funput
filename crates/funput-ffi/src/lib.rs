@@ -108,6 +108,38 @@ pub unsafe extern "C" fn funput_process_char(
     FunputResult::from_ime(&engine.inner.process_char(ch))
 }
 
+/// Copy the current composed buffer (the text the host shows as marked/underlined
+/// composition) as UTF-32 into `out`, up to `cap` codepoints. Returns the number
+/// of codepoints written.
+///
+/// Null-safe: a null handle or null `out` yields `0`.
+///
+/// # Safety
+/// `engine` must be a valid handle or null. `out` must point to writable storage
+/// for at least `cap` `u32` values, or be null.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn funput_buffer(
+    engine: *const FunputEngine,
+    out: *mut u32,
+    cap: usize,
+) -> usize {
+    let Some(engine) = (unsafe { engine.as_ref() }) else {
+        return 0;
+    };
+    if out.is_null() {
+        return 0;
+    }
+    let mut count = 0;
+    for ch in engine.inner.buffer().chars() {
+        if count >= cap {
+            break;
+        }
+        unsafe { *out.add(count) = ch as u32 };
+        count += 1;
+    }
+    count
+}
+
 /// Backspace inside the current composition: drop the last composed character so
 /// the next keystroke composes against the corrected text (`Phua` ⌫ `s` → `Phú`).
 ///

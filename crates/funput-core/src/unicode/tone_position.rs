@@ -46,25 +46,19 @@ fn vowel_cluster(buffer: &str) -> Option<VowelCluster> {
     Some(VowelCluster { indices })
 }
 
-fn cluster_pattern(buffer: &str, indices: &[usize]) -> String {
-    indices
-        .iter()
-        .map(|&i| vowel_stem(buffer.chars().nth(i).expect("index in bounds")).unwrap())
-        .collect()
-}
-
-/// Which vowel in the cluster receives the tone (0-based within cluster).
+/// Which vowel in the cluster receives the tone (0-based within cluster) — the
+/// **traditional** ("kiểu cũ") rule. Only consulted for clusters with no shaped
+/// vowel (those take priority and are handled in [`tone_vowel_index`]):
 ///
-/// Only consulted for clusters with no shaped vowel (those are handled by
-/// [`tone_vowel_index`]), so every pattern here is plain base letters.
-fn tone_offset_in_cluster(pattern: &str, cluster_len: usize) -> usize {
-    match pattern {
-        // Tone on second vowel (quy tắc mới).
-        "oa" | "oe" | "uy" => 1,
-        // Tone on first vowel — open diphthongs (ia, ua, ưa) and others.
-        "ao" | "ai" | "au" | "ay" | "eu" | "eo" | "ou" | "oi" | "ui" | "iu" | "ia"
-        | "ua" | "ưa" => 0,
-        _ => cluster_len.saturating_sub(1),
+/// - 1 vowel → on it.
+/// - 2 vowels, **open** (no final consonant) → first vowel: `hòa`, `ùy`, `mía`.
+/// - 2 vowels **+ final consonant**, or 3 vowels → second vowel: `toán`, `ngoài`.
+fn tone_offset_in_cluster(cluster_len: usize, has_coda: bool) -> usize {
+    match cluster_len {
+        1 => 0,
+        2 if has_coda => 1,
+        2 => 0,
+        _ => 1, // triphthong → middle vowel
     }
 }
 
@@ -84,9 +78,11 @@ pub fn tone_vowel_index(buffer: &str) -> Option<usize> {
         return Some(i);
     }
 
-    // No shaped vowel: fall back to the base-letter diphthong rules.
-    let pattern = cluster_pattern(buffer, &cluster.indices);
-    let offset = tone_offset_in_cluster(&pattern, cluster.indices.len());
+    // No shaped vowel: structural rule. A coda exists when a (consonant) char
+    // follows the last vowel of the cluster.
+    let last_vowel = *cluster.indices.last().expect("cluster is non-empty");
+    let has_coda = last_vowel + 1 < chars.len();
+    let offset = tone_offset_in_cluster(cluster.indices.len(), has_coda);
     Some(cluster.indices[offset.min(cluster.indices.len() - 1)])
 }
 
@@ -102,7 +98,11 @@ pub fn tone_target_vowel(buffer: &str, vowel_idx: usize) -> Option<char> {
     if !stem.eq_ignore_ascii_case(&'e') {
         return Some(vowel);
     }
-    if vowel_idx == 0 || !chars[vowel_idx - 1].eq_ignore_ascii_case(&'i') {
+    // The preceding `i` may already carry a tone (`vịe` + `t` → `việt`), so compare
+    // its stem, not the raw char.
+    let prev_is_i = vowel_idx > 0
+        && vowel_stem(chars[vowel_idx - 1]).is_some_and(|s| s.eq_ignore_ascii_case(&'i'));
+    if !prev_is_i {
         return Some(vowel);
     }
 
@@ -149,14 +149,24 @@ mod tests {
     }
 
     #[test]
-    fn tone_vowel_index_oa_and_ao() {
-        assert_eq!(char_at("hoa", tone_vowel_index("hoa").unwrap()), 'a');
-        assert_eq!(char_at("chao", tone_vowel_index("chao").unwrap()), 'a');
+    fn tone_vowel_index_open_diphthong_first_vowel() {
+        // Traditional rule: open 2-vowel cluster → tone on the first vowel.
+        assert_eq!(char_at("hoa", tone_vowel_index("hoa").unwrap()), 'o'); // hòa
+        assert_eq!(char_at("chao", tone_vowel_index("chao").unwrap()), 'a'); // chào
+        assert_eq!(char_at("hoe", tone_vowel_index("hoe").unwrap()), 'o'); // hòe
     }
 
     #[test]
-    fn tone_vowel_index_uy() {
-        assert_eq!(char_at("thuy", tone_vowel_index("thuy").unwrap()), 'y');
+    fn tone_vowel_index_uy_open_is_first_vowel() {
+        // Open `uy` → tone on `u` (ùy/úy), traditional style.
+        assert_eq!(char_at("thuy", tone_vowel_index("thuy").unwrap()), 'u');
+    }
+
+    #[test]
+    fn tone_vowel_index_oa_with_coda_is_second_vowel() {
+        // 2 vowels + final consonant → second vowel: hoàn, toán.
+        assert_eq!(char_at("hoan", tone_vowel_index("hoan").unwrap()), 'a');
+        assert_eq!(char_at("toan", tone_vowel_index("toan").unwrap()), 'a');
     }
 
     #[test]
@@ -185,15 +195,23 @@ mod tests {
     }
 
     #[test]
+    fn tone_vowel_index_plain_triphthong_is_middle() {
+        // Plain triphthongs take the tone on the middle vowel, not the last.
+        assert_eq!(char_at("ngoai", tone_vowel_index("ngoai").unwrap()), 'a'); // ngoài
+        assert_eq!(char_at("xoay", tone_vowel_index("xoay").unwrap()), 'a'); // xoáy
+        assert_eq!(char_at("khuyu", tone_vowel_index("khuyu").unwrap()), 'y'); // khuỷu
+    }
+
+    #[test]
     fn tone_target_vowel_ie_uses_circumflex_e() {
         assert_eq!(tone_target_vowel("viet", 2), Some('ê'));
         assert_eq!(tone_target_vowel("lien", 2), Some('ê'));
     }
 
     #[test]
-    fn reposition_moves_tone_from_o_to_a() {
-        let misplaced = "hòa";
-        let result = reposition_existing_tone(misplaced);
-        assert_eq!(result.as_deref(), Some("hoà"));
+    fn reposition_moves_tone_to_first_vowel_of_open_diphthong() {
+        // Traditional: an open `oa` takes the tone on `o`, so `hoà` → `hòa`.
+        let result = reposition_existing_tone("hoà");
+        assert_eq!(result.as_deref(), Some("hòa"));
     }
 }

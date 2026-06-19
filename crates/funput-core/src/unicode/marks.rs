@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn main_vowel_index_delegates_to_tone_rules() {
-        assert_eq!(main_vowel_index("hoa"), Some(2));
+        assert_eq!(main_vowel_index("hoa"), Some(1)); // hòa — tone on `o`
         assert_eq!(main_vowel_index("chao"), Some(2));
         assert_eq!(main_vowel_index("ma"), Some(1));
         assert_eq!(main_vowel_index("ng"), None);

@@ -100,7 +100,7 @@ pub const CASES: &[VniCase] = &[
     // Reposition
     VniCase {
         keys: "hoa2",
-        output: "hoà",
+        output: "hòa",
         label: "reposition hoa2",
     },
     VniCase {
@@ -110,7 +110,7 @@ pub const CASES: &[VniCase] = &[
     },
     VniCase {
         keys: "thuy3",
-        output: "thuỷ",
+        output: "thủy",
         label: "reposition thuy3",
     },
     VniCase {

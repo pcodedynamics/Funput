@@ -50,7 +50,8 @@ fn violates_ckg_spelling(onset: &str, nucleus: &str) -> bool {
 
     match onset.to_lowercase().as_str() {
         "c" => !matches!(stem, 'a' | 'ă' | 'â' | 'o' | 'ô' | 'ơ' | 'u' | 'ư'),
-        "k" => !matches!(stem, 'e' | 'ê' | 'i'),
+        // `k` precedes the front vowels e, ê, i, y (kẻ, kê, kim, kỳ/ký/kỹ).
+        "k" => !matches!(stem, 'e' | 'ê' | 'i' | 'y'),
         // `g` + `i` is the valid `gi` digraph (gì, gìn); `g` + e/ê uses `gh`.
         "g" => !matches!(stem, 'a' | 'ă' | 'â' | 'o' | 'ô' | 'ơ' | 'u' | 'ư' | 'i'),
         "gh" => !matches!(stem, 'e' | 'ê' | 'i'),
@@ -228,8 +229,11 @@ mod tests {
 
     #[test]
     fn is_complete_syllable_cases() {
-        // Complete Vietnamese syllables.
-        for ok in ["má", "ma", "tét", "việt", "trường", "quá", "ăn", "nhanh"] {
+        // Complete Vietnamese syllables. `k` + `y` (kỳ/ký/kỹ) and the triphthong
+        // `ngoài` are regression guards for tone-placement / ckg-spelling fixes.
+        for ok in [
+            "má", "ma", "tét", "việt", "trường", "quá", "ăn", "nhanh", "kỳ", "ký", "kỹ", "ngoài",
+        ] {
             assert!(is_complete_syllable(ok), "{ok} should be complete");
         }
         // Invalid finals — a finished word ending in a non-Vietnamese coda.

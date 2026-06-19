@@ -90,10 +90,10 @@ fn vni_shape_syllables() {
 
 #[test]
 fn vni_reposition() {
-    assert_eq!(support::type_keys(InputMethod::Vni, "hoa2"), "hoà");
+    assert_eq!(support::type_keys(InputMethod::Vni, "hoa2"), "hòa");
     assert_eq!(support::type_keys(InputMethod::Vni, "chao2"), "chào");
-    assert_eq!(support::type_keys(InputMethod::Vni, "thuy3"), "thuỷ");
-    assert_eq!(support::type_keys(InputMethod::Vni, "khoe3"), "khoẻ");
+    assert_eq!(support::type_keys(InputMethod::Vni, "thuy3"), "thủy");
+    assert_eq!(support::type_keys(InputMethod::Vni, "khoe3"), "khỏe");
     assert_eq!(support::type_keys(InputMethod::Vni, "hoaf2"), "hoàf");
     assert_eq!(support::type_keys(InputMethod::Vni, "tru7o7n2g"), "trường");
     assert_eq!(

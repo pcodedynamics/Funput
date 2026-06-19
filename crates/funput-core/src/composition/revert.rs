@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn revert_tone() {
         assert_eq!(try_revert_tone("á", Tone::Sac), Some("a".into()));
-        assert_eq!(try_revert_tone("hoà", Tone::Huyen), Some("hoa".into()));
+        assert_eq!(try_revert_tone("hòa", Tone::Huyen), Some("hoa".into()));
         assert_eq!(try_revert_tone("a", Tone::Sac), None);
         assert_eq!(try_revert_tone("à", Tone::Sac), None);
     }

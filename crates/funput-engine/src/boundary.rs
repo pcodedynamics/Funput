@@ -19,10 +19,26 @@ pub(crate) fn is_word_boundary(key: char) -> bool {
 /// ending in a non-Vietnamese final (`cảd` from `card`, `côl` from `cool`) is not
 /// a real syllable and is restored to the raw Latin keystrokes. A valid syllable
 /// (`má`, `tét`) is kept — typing it was intentional.
+///
+/// Exception: keystrokes that deliberately request a Vietnamese character are never
+/// reverted (see [`keystrokes_intend_vietnamese`]) — that keeps abbreviations like
+/// `GĐ`, `QĐ`, `đc` instead of exposing `GDD` / `d9c`.
 pub(crate) fn should_restore(session: &Session) -> bool {
     !session.buffer.is_empty()
         && session.keys != session.buffer
         && !is_complete_syllable(&session.buffer)
+        && !keystrokes_intend_vietnamese(session)
+}
+
+/// The user deliberately asked for a Vietnamese character, so reverting to raw Latin
+/// would be wrong. Two method-independent signals:
+/// - a `đ`/`Đ` in the composed buffer — English has no `đ`, so `GĐ`, `QĐ`, `đc` are
+///   intentional (`dd` in Telex, `d9` in VNI both reach it);
+/// - a digit in the raw keys — a VNI tone/shape modifier (`d9c` → `đc`, `to1` → `tó`)
+///   that a revert would surface.
+fn keystrokes_intend_vietnamese(session: &Session) -> bool {
+    session.buffer.contains(['đ', 'Đ'])
+        || session.keys.contains(|c: char| c.is_ascii_digit())
 }
 
 fn english_restore_result(session: &Session, boundary_key: char) -> ImeResult {
@@ -96,6 +112,30 @@ mod tests {
     #[test]
     fn should_not_restore_when_buffer_empty() {
         let session = Session::new();
+        assert!(!should_restore(&session));
+    }
+
+    #[test]
+    fn should_not_restore_when_keys_contain_a_vni_digit() {
+        // VNI `d9c` → `đc`: reverting would expose the `9`, so keep the composed word.
+        let session = Session {
+            enabled: true,
+            method: InputMethod::Vni,
+            buffer: "đc".into(),
+            keys: "d9c".into(),
+        };
+        assert!(!should_restore(&session));
+    }
+
+    #[test]
+    fn should_not_restore_when_buffer_has_d_stroke_in_telex() {
+        // Telex `GDD` → `GĐ`: đ marks intentional Vietnamese, so keep it (no digits).
+        let session = Session {
+            enabled: true,
+            method: InputMethod::Telex,
+            buffer: "GĐ".into(),
+            keys: "GDD".into(),
+        };
         assert!(!should_restore(&session));
     }
 

@@ -60,7 +60,7 @@ fn english_word_restored_on_boundary() {
     assert_eq!(support::app_text(InputMethod::Telex, "card "), "card ");
     assert_eq!(support::app_text(InputMethod::Telex, "cool "), "cool ");
     assert_eq!(support::app_text(InputMethod::Telex, "hard."), "hard.");
-    assert_eq!(support::app_text(InputMethod::Telex, "masz "), "masz ");
+    assert_eq!(support::app_text(InputMethod::Telex, "park "), "park ");
 }
 
 #[test]

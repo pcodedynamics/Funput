@@ -37,8 +37,8 @@ fn telex_shape_then_tone() {
 
 #[test]
 fn telex_reposition() {
-    assert_eq!(type_keys("hoaf"), "hoà");
-    assert_eq!(type_keys("thuyr"), "thuỷ");
+    assert_eq!(type_keys("hoaf"), "hòa");
+    assert_eq!(type_keys("thuyr"), "thủy");
 }
 
 #[test]

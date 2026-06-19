@@ -5,6 +5,7 @@
 //! | `1`–`5` | tone: sắc, huyền, hỏi, ngã, nặng |
 //! | `6`–`8` | shape: mũ (â/ê/ô), móc (ơ/ư), trần (ă) |
 //! | `9` | stroke: `đ` |
+//! | `0` | remove tone mark (xóa dấu) |
 //! | other | normal character |
 
 use crate::input_method::KeyAction;
@@ -36,6 +37,7 @@ pub fn shape_from_digit(key: char) -> Option<VowelShape> {
 /// Classify a VNI keystroke into a method-agnostic [`KeyAction`].
 pub fn classify_key(_buffer: &str, key: char) -> KeyAction {
     match key {
+        '0' => KeyAction::RemoveTone,
         '9' => KeyAction::Stroke,
         '1'..='5' => KeyAction::Tone(tone_from_digit(key).expect("digit 1-5")),
         '6'..='8' => KeyAction::Shape(shape_from_digit(key).expect("digit 6-8")),
@@ -53,6 +55,11 @@ mod tests {
         assert_eq!(classify_key("", '1'), KeyAction::Tone(Tone::Sac));
         assert_eq!(classify_key("", '5'), KeyAction::Tone(Tone::Nang));
         assert_eq!(classify_key("", 'm'), KeyAction::Normal);
+    }
+
+    #[test]
+    fn classify_remove_tone() {
+        assert_eq!(classify_key("", '0'), KeyAction::RemoveTone);
     }
 
     #[test]
