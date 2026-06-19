@@ -1,0 +1,18 @@
+# Xcode user settings (breaks source control if shared)
+userdata/
+xcuserdata/
+
+# Derived Data and Build artifacts
+DerivedData/
+build/
+Products/
+
+# Architecture diagnostics
+*.dSYM
+
+# Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+# macOS specific files
+.DS_Store
