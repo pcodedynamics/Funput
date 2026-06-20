@@ -166,6 +166,8 @@ final class FunputInputController: IMKInputController {
         let settings = AppSettings.shared
         composer.setMethod(settings.inputMethod)
         composer.setEnabled(settings.vietnameseEnabled)
+        composer.setSmartRestore(settings.smartEnglishRestore)
+        composer.setEagerRestore(settings.eagerRestore)
     }
 
     private func setMarked(_ text: String, _ client: IMKTextInput) {

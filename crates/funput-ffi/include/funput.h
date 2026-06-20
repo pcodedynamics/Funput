@@ -78,6 +78,24 @@ void funput_set_method(FunputEngine *engine, uint8_t method);
 void funput_set_enabled(FunputEngine *engine, bool enabled);
 
 /**
+ * Toggle auto-restore of non-Vietnamese words to their raw Latin keystrokes
+ * (`card` stays `card`). When off, the composed buffer is always kept.
+ *
+ * # Safety
+ * `engine` must be a valid handle or null.
+ */
+void funput_set_smart_restore(FunputEngine *engine, bool on);
+
+/**
+ * Toggle eager restore — flip to raw keys the instant a word dead-ends instead of
+ * waiting for a word boundary. Only applies while smart restore is on.
+ *
+ * # Safety
+ * `engine` must be a valid handle or null.
+ */
+void funput_set_eager_restore(FunputEngine *engine, bool on);
+
+/**
  * Reset composition state (buffer + raw keys), e.g. on focus change.
  *
  * # Safety

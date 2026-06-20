@@ -16,3 +16,6 @@ playground.xcworkspace
 
 # macOS specific files
 .DS_Store
+
+# Vendor
+Vendor/

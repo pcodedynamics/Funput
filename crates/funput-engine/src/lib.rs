@@ -59,6 +59,20 @@ impl Engine {
         self.session.method
     }
 
+    /// Toggle auto-restore of non-Vietnamese words to their raw Latin keystrokes
+    /// (`card` stays `card` instead of composing `cảd`). When off, the composed
+    /// buffer is always kept.
+    pub fn set_smart_restore(&mut self, on: bool) {
+        self.session.smart_restore = on;
+    }
+
+    /// Toggle eager restore — flip to raw keys the instant a word becomes a dead
+    /// end, instead of waiting for a word boundary. Only applies while smart
+    /// restore is on.
+    pub fn set_eager_restore(&mut self, on: bool) {
+        self.session.eager_restore = on;
+    }
+
     /// Reset composition state (buffer and raw keys) without changing enabled/method.
     pub fn clear(&mut self) {
         self.session.clear();

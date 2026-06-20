@@ -24,6 +24,16 @@ final class FunputComposer {
         funput_set_enabled(handle, enabled)
     }
 
+    /// Auto-restore non-Vietnamese words to their raw Latin keystrokes.
+    func setSmartRestore(_ on: Bool) {
+        funput_set_smart_restore(handle, on)
+    }
+
+    /// Restore the instant a word dead-ends, without waiting for a word boundary.
+    func setEagerRestore(_ on: Bool) {
+        funput_set_eager_restore(handle, on)
+    }
+
     func clear() {
         funput_clear(handle)
     }

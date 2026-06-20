@@ -24,7 +24,8 @@ pub(crate) fn is_word_boundary(key: char) -> bool {
 /// reverted (see [`keystrokes_intend_vietnamese`]) — that keeps abbreviations like
 /// `GĐ`, `QĐ`, `đc` instead of exposing `GDD` / `d9c`.
 pub(crate) fn should_restore(session: &Session) -> bool {
-    !session.buffer.is_empty()
+    session.smart_restore
+        && !session.buffer.is_empty()
         && session.keys != session.buffer
         && !is_complete_syllable(&session.buffer)
         && !keystrokes_intend_vietnamese(session)
@@ -83,6 +84,8 @@ mod tests {
             method: InputMethod::Telex,
             buffer: "ábc".into(),
             keys: "absc".into(),
+            smart_restore: true,
+            eager_restore: true,
         };
         assert!(should_restore(&session));
     }
@@ -94,6 +97,8 @@ mod tests {
             method: InputMethod::Telex,
             buffer: "má".into(),
             keys: "mas".into(),
+            smart_restore: true,
+            eager_restore: true,
         };
         assert!(!should_restore(&session));
     }
@@ -105,6 +110,8 @@ mod tests {
             method: InputMethod::Telex,
             buffer: "text".into(),
             keys: "text".into(),
+            smart_restore: true,
+            eager_restore: true,
         };
         assert!(!should_restore(&session));
     }
@@ -123,6 +130,8 @@ mod tests {
             method: InputMethod::Vni,
             buffer: "đc".into(),
             keys: "d9c".into(),
+            smart_restore: true,
+            eager_restore: true,
         };
         assert!(!should_restore(&session));
     }
@@ -135,6 +144,8 @@ mod tests {
             method: InputMethod::Telex,
             buffer: "GĐ".into(),
             keys: "GDD".into(),
+            smart_restore: true,
+            eager_restore: true,
         };
         assert!(!should_restore(&session));
     }
@@ -146,6 +157,8 @@ mod tests {
             method: InputMethod::Telex,
             buffer: "ábc".into(),
             keys: "absc".into(),
+            smart_restore: true,
+            eager_restore: true,
         };
         let result = on_word_boundary(&mut session, ' ');
         assert_eq!(result.action, Action::Send);
@@ -162,6 +175,8 @@ mod tests {
             method: InputMethod::Telex,
             buffer: "má".into(),
             keys: "mas".into(),
+            smart_restore: true,
+            eager_restore: true,
         };
         let result = on_word_boundary(&mut session, ' ');
         assert_eq!(result.action, Action::None);

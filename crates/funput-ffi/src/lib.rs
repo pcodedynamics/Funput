@@ -77,6 +77,30 @@ pub unsafe extern "C" fn funput_set_enabled(engine: *mut FunputEngine, enabled: 
     }
 }
 
+/// Toggle auto-restore of non-Vietnamese words to their raw Latin keystrokes
+/// (`card` stays `card`). When off, the composed buffer is always kept.
+///
+/// # Safety
+/// `engine` must be a valid handle or null.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn funput_set_smart_restore(engine: *mut FunputEngine, on: bool) {
+    if let Some(engine) = unsafe { engine.as_mut() } {
+        engine.inner.set_smart_restore(on);
+    }
+}
+
+/// Toggle eager restore — flip to raw keys the instant a word dead-ends instead of
+/// waiting for a word boundary. Only applies while smart restore is on.
+///
+/// # Safety
+/// `engine` must be a valid handle or null.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn funput_set_eager_restore(engine: *mut FunputEngine, on: bool) {
+    if let Some(engine) = unsafe { engine.as_mut() } {
+        engine.inner.set_eager_restore(on);
+    }
+}
+
 /// Reset composition state (buffer + raw keys), e.g. on focus change.
 ///
 /// # Safety

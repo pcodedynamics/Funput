@@ -19,10 +19,12 @@ pub(crate) fn process(session: &mut Session, key: char) -> ImeResult {
     };
 
     // Eager English restore: flip to the raw keystrokes the instant the word can
-    // no longer be Vietnamese (`tẽt` → `text` on the closing `t`). Skip on Reverted
-    // (a deliberate user restore) and when nothing was transformed
-    // (`keys == composed`, e.g. a literal digit `ng1`).
-    let new_buffer = if result.kind != TransformKind::Reverted
+    // no longer be Vietnamese (`tẽt` → `text` on the closing `t`). Gated by the
+    // smart + eager toggles. Skip on Reverted (a deliberate user restore) and when
+    // nothing was transformed (`keys == composed`, e.g. a literal digit `ng1`).
+    let new_buffer = if session.smart_restore
+        && session.eager_restore
+        && result.kind != TransformKind::Reverted
         && session.keys != composed
         && is_definitely_invalid(&composed)
     {

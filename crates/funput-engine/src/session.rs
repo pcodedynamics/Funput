@@ -13,6 +13,12 @@ pub(crate) struct Session {
     /// (phase E3) rebuild the original Latin text when the composed buffer is
     /// not a complete Vietnamese syllable (`keys != buffer && !is_complete_syllable(buffer)`).
     pub(crate) keys: String,
+    /// Auto-restore words that aren't valid Vietnamese to their raw Latin keys.
+    /// When `false`, the composed buffer is always kept (no English restore).
+    pub(crate) smart_restore: bool,
+    /// Restore the instant a word becomes a dead end, without waiting for a word
+    /// boundary. Only meaningful while `smart_restore` is on.
+    pub(crate) eager_restore: bool,
 }
 
 impl Session {
@@ -22,6 +28,8 @@ impl Session {
             method: InputMethod::Telex,
             buffer: String::new(),
             keys: String::new(),
+            smart_restore: true,
+            eager_restore: true,
         }
     }
 
