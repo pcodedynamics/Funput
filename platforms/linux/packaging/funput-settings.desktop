@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Funput
+GenericName=Vietnamese Input Method Settings
+Comment=Configure Funput — Telex & VNI Vietnamese typing
+Exec=funput-settings
+Icon=funput
+Terminal=false
+Categories=Utility;Settings;
+Keywords=vietnamese;telex;vni;input;gõ;tiếng việt;

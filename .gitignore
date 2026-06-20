@@ -19,5 +19,9 @@ Cargo.lock
 
 # End of https://www.toptal.com/developers/gitignore/api/rust
 
+# Linux Fcitx5 addon: CMake/CPack build output + Tauri codegen
+platforms/linux/build/
+platforms/linux/src-tauri/gen/
+
 # DS_Store
 .DS_Store

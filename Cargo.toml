@@ -13,6 +13,7 @@ members = [
 # stays green on macOS/Linux dev machines; build it from its own dir on Windows.
 exclude = [
     "platforms/windows/src-tauri",
+    "platforms/linux/src-tauri",
 ]
 
 [workspace.package]

@@ -1,0 +1,28 @@
+# Standalone package (excluded from the repo workspace): pulls in tauri, which on
+# Linux drags in webkit2gtk system libs. An empty [workspace] table detaches it so
+# `cargo` inside this dir does not attach to the repo root.
+[package]
+name = "funput-linux"
+version = "1.2026.1"
+edition = "2021"
+description = "Funput for Linux — Settings & Onboarding (Tauri shell). Typing itself is handled by the Fcitx5 addon."
+
+[workspace]
+
+[[bin]]
+name = "funput-settings"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dirs = "5"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

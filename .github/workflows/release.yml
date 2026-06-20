@@ -156,9 +156,77 @@ jobs:
           name: windows
           path: ${{ runner.temp }}/out/*
 
-  # ---- Publish one release with both artifacts ------------------------------
+  # ---- Linux: shared UI + Fcitx5 addon + Settings app → .deb ----------------
+  linux:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          # Fcitx5 addon toolchain + JSON, and the Tauri (webkit2gtk) deps.
+          sudo apt-get install -y \
+            cmake fcitx5 libfcitx5core-dev libfcitx5utils-dev libfcitx5config-dev \
+            nlohmann-json3-dev \
+            libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            platforms/linux/src-tauri -> target
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Stamp version from tag
+        if: needs.version.outputs.version != ''
+        run: |
+          V="${{ needs.version.outputs.version }}"
+          node -e "const fs=require('fs');const f='platforms/linux/src-tauri/tauri.conf.json';const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n')" "$V"
+          node -e "const fs=require('fs');const f='platforms/linux/src-tauri/Cargo.toml';let s=fs.readFileSync(f,'utf8');s=s.replace(/^version = \".*\"/m,'version = \"'+process.argv[1]+'\"');fs.writeFileSync(f,s)" "$V"
+
+      - name: Build shared UI
+        run: |
+          pnpm -C platforms/ui install --no-frozen-lockfile
+          pnpm -C platforms/ui build
+
+      - name: Build Settings app (Tauri)
+        working-directory: platforms/linux/src-tauri
+        run: cargo build --release
+
+      - name: Build addon + .deb
+        run: |
+          V="${{ needs.version.outputs.version }}"; V="${V:-1.2026.1}"
+          cmake -S platforms/linux/fcitx5 -B platforms/linux/build \
+            -DCMAKE_BUILD_TYPE=Release -DFUNPUT_VERSION="$V"
+          cmake --build platforms/linux/build --parallel
+          ( cd platforms/linux/build && cpack -G DEB )
+
+      - name: Stage artifact
+        run: |
+          OUT="$RUNNER_TEMP/out"; mkdir -p "$OUT"
+          for f in platforms/linux/build/*.deb; do
+            cp "$f" "$OUT/"
+            sha256sum "$f" | awk '{print $1}' > "$OUT/$(basename "$f").sha256"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: ${{ runner.temp }}/out/*
+
+  # ---- Publish one release with all artifacts -------------------------------
   publish:
-    needs: [version, macos, windows]
+    needs: [version, macos, windows, linux]
     if: needs.version.outputs.is_release == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -171,6 +239,7 @@ jobs:
           mkdir -p out
           cp artifacts/macos/* out/ 2>/dev/null || true
           cp artifacts/windows/* out/ 2>/dev/null || true
+          cp artifacts/linux/* out/ 2>/dev/null || true
           ls -l out
           {
             echo "## Funput ${{ github.ref_name }}"
@@ -181,6 +250,8 @@ jobs:
             echo "  Sau khi cài (cả hai cách): **System Settings → Keyboard → Input Sources → + → Vietnamese → Funput**. Chưa thấy thì log out/in một lần."
             echo "### Windows"
             echo "- \`Funput-*.exe\` — portable, double-click là chạy (nằm ở khay hệ thống). Cần WebView2 (có sẵn trên Win10/11)."
+            echo "### Linux"
+            echo "- \`funput_*_amd64.deb\` — \`sudo apt install ./funput_*_amd64.deb\` (Debian/Ubuntu, cần Fcitx5). Sau đó: \`fcitx5-configtool\` → thêm **Funput** vào danh sách input method. Mở **Funput** trong menu ứng dụng để chỉnh Telex/VNI."
             echo
             echo "### SHA-256"
             for f in out/*.sha256; do
@@ -194,5 +265,6 @@ jobs:
             out/*.pkg
             out/*.app.zip
             out/*.exe
+            out/*.deb
           body_path: notes.md
           generate_release_notes: true

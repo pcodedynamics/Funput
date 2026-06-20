@@ -1,0 +1,7 @@
+[InputMethod]
+Name=Funput
+Icon=funput
+Label=FU
+LangCode=vi
+Addon=funput
+Configurable=False
