@@ -85,3 +85,9 @@ cargo test --workspace
 ```
 
 Pull request và issue đều được — Funput thích có bạn cùng chơi.
+
+---
+
+## License
+
+[MIT](LICENSE) — © [PulseFu](https://pulsefu.com). Dùng thoải mái, giữ lại dòng copyright là được.

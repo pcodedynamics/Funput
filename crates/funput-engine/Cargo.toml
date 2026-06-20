@@ -2,6 +2,7 @@
 name = "funput-engine"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
 
 [dependencies]
 funput-core = { path = "../funput-core" }
