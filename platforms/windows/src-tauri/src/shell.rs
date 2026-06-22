@@ -77,6 +77,16 @@ pub fn is_composing() -> bool {
     with(|s| !s.engine.buffer().is_empty())
 }
 
+/// True when the most-recently-focused app is Google Chrome. Used to route text
+/// injection through the staged (split + delay) path that works around Chrome's
+/// omnibox autocomplete eating synthesized Backspaces. `recent[0]` is the current
+/// foreground app (it is pushed there by the foreground hook). Chrome Beta/Dev/
+/// Canary also report `chrome.exe`; Edge (`msedge.exe`) and Brave (`brave.exe`)
+/// deliberately do not match — they are unaffected.
+pub fn foreground_is_chrome() -> bool {
+    with(|s| s.recent.first().map(|a| a.id == "chrome.exe").unwrap_or(false))
+}
+
 // --- writes (each persists) ------------------------------------------------
 
 /// Flip VI/EN; returns the new state.
