@@ -33,6 +33,14 @@ static const char *methodStr(Method m) {
     return m == Method::Telex ? "telex" : "vni";
 }
 
+static ToneStyle parseToneStyle(const std::string &s) {
+    return s == "modern" ? ToneStyle::Modern : ToneStyle::Traditional;
+}
+
+static const char *toneStyleStr(ToneStyle t) {
+    return t == ToneStyle::Modern ? "modern" : "traditional";
+}
+
 static Hotkey parseHotkey(const std::string &s) {
     if (s == "ctrl_space") return Hotkey::CtrlSpace;
     if (s == "alt_shift") return Hotkey::AltShift;
@@ -68,6 +76,7 @@ bool Settings::reloadIfChanged() {
 
     const Settings prev = *this;
     method = parseMethod(j.value("method", std::string(methodStr(method))));
+    toneStyle = parseToneStyle(j.value("toneStyle", std::string(toneStyleStr(toneStyle))));
     enabled = j.value("enabled", enabled);
     smartRestore = j.value("smartRestore", smartRestore);
     eagerRestore = j.value("eagerRestore", eagerRestore);
@@ -83,9 +92,10 @@ bool Settings::reloadIfChanged() {
         }
     }
 
-    return method != prev.method || enabled != prev.enabled ||
-           smartRestore != prev.smartRestore || eagerRestore != prev.eagerRestore ||
-           toggleHotkey != prev.toggleHotkey || excludedAppIds != prev.excludedAppIds;
+    return method != prev.method || toneStyle != prev.toneStyle ||
+           enabled != prev.enabled || smartRestore != prev.smartRestore ||
+           eagerRestore != prev.eagerRestore || toggleHotkey != prev.toggleHotkey ||
+           excludedAppIds != prev.excludedAppIds;
 }
 
 bool Settings::isExcluded(const std::string &program) const {
@@ -110,6 +120,7 @@ void Settings::save() const {
         if (existing.is_object()) j = std::move(existing);
     }
     j["method"] = methodStr(method);
+    j["toneStyle"] = toneStyleStr(toneStyle);
     j["enabled"] = enabled;
     j["smartRestore"] = smartRestore;
     j["eagerRestore"] = eagerRestore;

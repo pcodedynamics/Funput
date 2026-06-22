@@ -6,6 +6,7 @@
 import { invoke } from "@tauri-apps/api/core";
 
 export type Method = "telex" | "vni";
+export type ToneStyle = "traditional" | "modern";
 export type Hotkey = "ctrl_backtick" | "ctrl_space" | "alt_shift";
 
 /// An app excluded from Vietnamese input. `id` is the platform-specific identifier
@@ -17,6 +18,7 @@ export interface ExcludedApp {
 
 export interface Settings {
   method: Method;
+  toneStyle: ToneStyle;
   enabled: boolean;
   smartRestore: boolean;
   eagerRestore: boolean;
@@ -28,6 +30,7 @@ export interface Settings {
 
 const DEFAULTS: Settings = {
   method: "vni",
+  toneStyle: "traditional",
   enabled: true,
   smartRestore: true,
   eagerRestore: true,
@@ -58,6 +61,7 @@ export async function getSettings(): Promise<Settings> {
 }
 
 export const setMethod = (method: Method) => call("set_method", { method });
+export const setToneStyle = (toneStyle: ToneStyle) => call("set_tone_style", { toneStyle });
 export const setEnabled = (on: boolean) => call("set_enabled", { on });
 export const setSmartRestore = (on: boolean) => call("set_smart_restore", { on });
 export const setEagerRestore = (on: boolean) => call("set_eager_restore", { on });

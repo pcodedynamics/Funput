@@ -12,9 +12,19 @@
     vni: "Dấu bằng chữ số — a6→â, o7→ơ, a1→á, d9→đ",
   };
 
+  const toneBlurb: Record<api.ToneStyle, string> = {
+    traditional: "Dấu kiểu cũ — hòa, khỏe, thúy",
+    modern: "Dấu kiểu mới — hoà, khoẻ, thuý",
+  };
+
   function pick(m: api.Method) {
     settings.method = m;
     api.setMethod(m);
+  }
+
+  function pickTone(t: api.ToneStyle) {
+    settings.toneStyle = t;
+    api.setToneStyle(t);
   }
 </script>
 
@@ -29,6 +39,21 @@
           ]}
           value={settings.method}
           onchange={pick}
+        />
+      {/snippet}
+    </SettingsRow>
+  </GlassCard>
+
+  <GlassCard>
+    <SettingsRow title="Kiểu đặt dấu" subtitle={toneBlurb[settings.toneStyle]}>
+      {#snippet control()}
+        <Segmented
+          options={[
+            { id: "traditional", label: "Truyền thống" },
+            { id: "modern", label: "Hiện đại" },
+          ]}
+          value={settings.toneStyle}
+          onchange={pickTone}
         />
       {/snippet}
     </SettingsRow>

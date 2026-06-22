@@ -6,7 +6,7 @@ use tauri::AppHandle;
 use tauri_plugin_autostart::ManagerExt;
 use tauri_plugin_opener::OpenerExt;
 
-use crate::settings::{ExcludedApp, Hotkey, Method, Settings};
+use crate::settings::{ExcludedApp, Hotkey, Method, Settings, ToneStyle};
 use crate::shell;
 
 #[tauri::command]
@@ -37,6 +37,11 @@ pub fn list_recent_apps() -> Vec<ExcludedApp> {
 #[tauri::command]
 pub fn set_method(method: Method) {
     shell::set_method(method.core());
+}
+
+#[tauri::command]
+pub fn set_tone_style(tone_style: ToneStyle) {
+    shell::set_tone_style(tone_style.core());
 }
 
 #[tauri::command]

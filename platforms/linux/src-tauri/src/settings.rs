@@ -15,6 +15,16 @@ pub enum Method {
     Vni,
 }
 
+/// Tone-mark placement style (traditional `hòa` vs modern `hoà`). This process only
+/// persists it to settings.json; the Fcitx5 addon reads it and drives the engine.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ToneStyle {
+    #[default]
+    Traditional,
+    Modern,
+}
+
 /// VI/EN toggle hotkey presets. The Fcitx5 addon maps these to keysyms.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -37,6 +47,9 @@ pub struct ExcludedApp {
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub method: Method,
+    /// `#[serde(default)]` keeps older settings files (without this key) loadable.
+    #[serde(default)]
+    pub tone_style: ToneStyle,
     pub enabled: bool,
     pub smart_restore: bool,
     pub eager_restore: bool,
@@ -53,6 +66,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             method: Method::Vni,
+            tone_style: ToneStyle::Traditional,
             enabled: true,
             smart_restore: true,
             eager_restore: true,

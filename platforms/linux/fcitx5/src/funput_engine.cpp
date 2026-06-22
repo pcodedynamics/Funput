@@ -44,6 +44,7 @@ FunputEngine::FunputEngine(fcitx::Instance *instance) : instance_(instance) {
 
 void FunputEngine::applySettings() {
     handle_.setMethod(static_cast<uint8_t>(settings_.method));
+    handle_.setToneStyle(static_cast<uint8_t>(settings_.toneStyle));
     effectiveEnabled_ = settings_.enabled; // baseline; activate() refines it per-app
     handle_.setEnabled(effectiveEnabled_);
     handle_.setSmartRestore(settings_.smartRestore);

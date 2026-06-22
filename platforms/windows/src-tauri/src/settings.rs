@@ -4,7 +4,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use funput_core::InputMethod;
+use funput_core::{InputMethod, ToneStyle as CoreToneStyle};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -25,6 +25,31 @@ impl Method {
         match m {
             InputMethod::Telex => Method::Telex,
             InputMethod::Vni => Method::Vni,
+        }
+    }
+}
+
+/// Tone-mark placement style (traditional `hòa` vs modern `hoà`). Mirrors `Method`:
+/// a serde-friendly enum bridged to the engine's `funput_core::ToneStyle`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ToneStyle {
+    #[default]
+    Traditional,
+    Modern,
+}
+
+impl ToneStyle {
+    pub fn core(self) -> CoreToneStyle {
+        match self {
+            ToneStyle::Traditional => CoreToneStyle::Traditional,
+            ToneStyle::Modern => CoreToneStyle::Modern,
+        }
+    }
+    pub fn from_core(ts: CoreToneStyle) -> Self {
+        match ts {
+            CoreToneStyle::Traditional => ToneStyle::Traditional,
+            CoreToneStyle::Modern => ToneStyle::Modern,
         }
     }
 }
@@ -51,6 +76,9 @@ pub struct ExcludedApp {
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
     pub method: Method,
+    /// `#[serde(default)]` keeps older settings files (without this key) loadable.
+    #[serde(default)]
+    pub tone_style: ToneStyle,
     pub enabled: bool,
     pub smart_restore: bool,
     pub eager_restore: bool,
@@ -67,6 +95,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             method: Method::Vni,
+            tone_style: ToneStyle::Traditional,
             enabled: true,
             smart_restore: true,
             eager_restore: true,

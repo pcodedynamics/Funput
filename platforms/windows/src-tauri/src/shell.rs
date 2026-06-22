@@ -5,10 +5,10 @@
 
 use std::sync::{Mutex, OnceLock};
 
-use funput_core::InputMethod;
+use funput_core::{InputMethod, ToneStyle as CoreToneStyle};
 use funput_engine::{Engine, ImeResult};
 
-use crate::settings::{ExcludedApp, Hotkey, Method, Settings};
+use crate::settings::{ExcludedApp, Hotkey, Method, Settings, ToneStyle};
 
 /// Tag stamped into `dwExtraInfo` of every event we synthesize via `SendInput`, so
 /// the hook can recognize and ignore its own injected keystrokes (no re-entrancy).
@@ -29,6 +29,7 @@ static SHELL: OnceLock<Mutex<Shell>> = OnceLock::new();
 
 fn apply_to_engine(engine: &mut Engine, s: &Settings) {
     engine.set_method(s.method.core());
+    engine.set_tone_style(s.tone_style.core());
     engine.set_enabled(s.enabled);
     engine.set_smart_restore(s.smart_restore);
     engine.set_eager_restore(s.eager_restore);
@@ -69,6 +70,9 @@ pub fn enabled() -> bool {
 }
 pub fn method() -> InputMethod {
     with(|s| s.settings.method.core())
+}
+pub fn tone_style() -> CoreToneStyle {
+    with(|s| s.settings.tone_style.core())
 }
 pub fn toggle_hotkey() -> Hotkey {
     with(|s| s.settings.toggle_hotkey)
@@ -119,6 +123,14 @@ pub fn set_method(method: InputMethod) {
         s.settings.method = Method::from_core(method);
         s.engine.set_method(method);
         s.engine.clear();
+        s.settings.save();
+    });
+}
+
+pub fn set_tone_style(style: CoreToneStyle) {
+    with(|s| {
+        s.settings.tone_style = ToneStyle::from_core(style);
+        s.engine.set_tone_style(style);
         s.settings.save();
     });
 }

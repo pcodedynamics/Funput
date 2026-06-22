@@ -50,6 +50,7 @@ public:
     }
 
     void setMethod(uint8_t method) { funput_set_method(engine_, method); }
+    void setToneStyle(uint8_t style) { funput_set_tone_style(engine_, style); }
     void setEnabled(bool on) { funput_set_enabled(engine_, on); }
     void setSmartRestore(bool on) { funput_set_smart_restore(engine_, on); }
     void setEagerRestore(bool on) { funput_set_eager_restore(engine_, on); }

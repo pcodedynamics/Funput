@@ -13,10 +13,12 @@
 namespace funput {
 
 enum class Method : uint8_t { Telex = 0, Vni = 1 };
+enum class ToneStyle : uint8_t { Traditional = 0, Modern = 1 };
 enum class Hotkey { CtrlBacktick, CtrlSpace, AltShift };
 
 struct Settings {
     Method method = Method::Vni;
+    ToneStyle toneStyle = ToneStyle::Traditional;
     bool enabled = true;
     bool smartRestore = true;
     bool eagerRestore = true;
