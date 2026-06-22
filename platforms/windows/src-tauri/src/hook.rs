@@ -153,11 +153,11 @@ fn handle_keydown(kbd: &KBDLLHOOKSTRUCT) -> bool {
             if plan.is_noop() {
                 false // Action::None — the literal key reaches the app
             } else {
-                // Chrome's omnibox needs the deletions and the new text spaced
-                // apart (see inject::send_plan_staged); everything else takes the
-                // direct, synchronous path.
+                // Chrome's omnibox eats a Backspace to clear its autocomplete
+                // selection, so it gets a Delete primer first (see
+                // inject::send_plan_chrome); everything else takes the direct path.
                 if shell::foreground_is_chrome() {
-                    inject::send_plan_staged(&plan);
+                    inject::send_plan_chrome(&plan);
                 } else {
                     inject::send_plan(&plan); // delete + retype the composed text
                 }

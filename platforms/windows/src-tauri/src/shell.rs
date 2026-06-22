@@ -78,8 +78,8 @@ pub fn is_composing() -> bool {
 }
 
 /// True when the most-recently-focused app is Google Chrome. Used to route text
-/// injection through the staged (split + delay) path that works around Chrome's
-/// omnibox autocomplete eating synthesized Backspaces. `recent[0]` is the current
+/// injection through the Delete-primer path that works around Chrome's omnibox
+/// autocomplete eating synthesized Backspaces. `recent[0]` is the current
 /// foreground app (it is pushed there by the foreground hook). Chrome Beta/Dev/
 /// Canary also report `chrome.exe`; Edge (`msedge.exe`) and Brave (`brave.exe`)
 /// deliberately do not match — they are unaffected.
