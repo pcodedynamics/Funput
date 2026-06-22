@@ -102,6 +102,38 @@ jobs:
             shasum -a 256 "$f" | awk '{print $1}' > "$OUT/$(basename "$f").sha256"
           done
 
+      # Sparkle auto-update feed: sign the .app.zip with the EdDSA key and emit an
+      # appcast.xml whose enclosure points at this tag's GitHub Release asset. The
+      # app's SUFeedURL reads releases/latest/download/appcast.xml, so publishing
+      # appcast.xml as a release asset is enough — no separate host needed.
+      - name: Generate + sign Sparkle appcast
+        if: needs.version.outputs.version != ''
+        working-directory: platforms/macos
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+          # Keep the CLI tools in lockstep with the framework SPM resolves (~> 2.6).
+          SPARKLE_VERSION: "2.9.3"
+        run: |
+          set -euo pipefail
+          # Fetch Sparkle's command-line tools (generate_appcast / sign_update).
+          TOOLS="$RUNNER_TEMP/sparkle"; mkdir -p "$TOOLS"
+          curl -fsSL "https://github.com/sparkle-project/Sparkle/releases/download/$SPARKLE_VERSION/Sparkle-$SPARKLE_VERSION.tar.xz" \
+            | tar -xJ -C "$TOOLS"
+          # generate_appcast reads CFBundleVersion/CFBundleShortVersionString from the
+          # app inside the archive, so feed it a clean dir with just the .app.zip.
+          ARCHIVES="$RUNNER_TEMP/appcast"; mkdir -p "$ARCHIVES"
+          cp build/release/Funput-*.app.zip "$ARCHIVES/"
+          KEYFILE="$RUNNER_TEMP/sparkle_ed_key"
+          printf '%s' "$SPARKLE_ED_PRIVATE_KEY" > "$KEYFILE"
+          "$TOOLS/bin/generate_appcast" \
+            --ed-key-file "$KEYFILE" \
+            --download-url-prefix "https://github.com/pcodedynamics/Funput/releases/download/v$VERSION/" \
+            -o "$ARCHIVES/appcast.xml" \
+            "$ARCHIVES"
+          rm -f "$KEYFILE"
+          cp "$ARCHIVES/appcast.xml" "$RUNNER_TEMP/out/appcast.xml"
+
       - uses: actions/upload-artifact@v4
         with:
           name: macos
@@ -307,5 +339,6 @@ jobs:
             out/*.app.zip
             out/*.exe
             out/*.deb
+            out/appcast.xml
           body_path: notes.md
           generate_release_notes: true

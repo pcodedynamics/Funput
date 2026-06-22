@@ -74,6 +74,18 @@
     <true/>
     <key>NSHumanReadableCopyright</key>
     <string></string>
+    <!-- Sparkle auto-update. Feed is the appcast.xml asset attached to the latest
+         GitHub Release. Checks are manual-only (no background polling). -->
+    <key>SUFeedURL</key>
+    <string>https://github.com/pcodedynamics/Funput/releases/latest/download/appcast.xml</string>
+    <!-- TODO: replace with the real EdDSA public key from `generate_keys`
+         (bin/generate_keys prints `<string>…</string>` to paste here). -->
+    <key>SUPublicEDKey</key>
+    <string>REPLACE_WITH_SPARKLE_ED_PUBLIC_KEY</string>
+    <key>SUEnableAutomaticChecks</key>
+    <false/>
+    <key>SUAllowsAutomaticUpdates</key>
+    <false/>
     <key>tsInputMethodCharacterRepertoireKey</key>
     <array>
         <string>vi</string>

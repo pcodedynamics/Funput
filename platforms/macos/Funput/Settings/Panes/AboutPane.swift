@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct AboutPane: View {
+    // Optional so SwiftUI previews (which don't inject the manager) still render.
+    @Environment(UpdaterManager.self) private var updater: UpdaterManager?
+
     var body: some View {
         VStack(spacing: Theme.Spacing.lg) {
             GlassCard {
@@ -15,6 +18,13 @@ struct AboutPane: View {
                     Text("Phiên bản \(appVersion)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+
+                    if let updater {
+                        Button("Kiểm tra cập nhật…") { updater.checkForUpdates() }
+                            .buttonStyle(.glass)
+                            .disabled(!updater.canCheckForUpdates)
+                            .padding(.top, Theme.Spacing.sm)
+                    }
 
                     HStack(spacing: Theme.Spacing.md) {
                         Link("GitHub", destination: URL(string: "https://github.com/Funput/Funput")!)

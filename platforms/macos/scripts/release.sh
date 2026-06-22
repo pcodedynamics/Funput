@@ -124,11 +124,16 @@ run_xcode() {
 echo "Archiving (universal)…"
 # Build args via positional params so values with spaces ("Developer ID
 # Application", "arm64 x86_64") survive as single arguments.
+# CURRENT_PROJECT_VERSION (→ CFBundleVersion) is stamped to the same tag value as
+# MARKETING_VERSION. The project default is a static "1", but Sparkle compares
+# CFBundleVersion to decide if an update is newer — a frozen value would make every
+# release look identical and updates would never be offered. The calver (e.g.
+# 1.2026.1) compares correctly under Sparkle's SUStandardVersionComparator.
 set -- -project Funput.xcodeproj -scheme Funput -configuration "$CONFIGURATION" \
     -derivedDataPath "$DERIVED" -archivePath "$ARCHIVE" \
     -destination "generic/platform=macOS" \
     "ARCHS=arm64 x86_64" ONLY_ACTIVE_ARCH=NO \
-    "MARKETING_VERSION=$VERSION"
+    "MARKETING_VERSION=$VERSION" "CURRENT_PROJECT_VERSION=$VERSION"
 if [ -n "$DRY_RUN" ]; then
     set -- "$@" CODE_SIGNING_ALLOWED=NO
 else

@@ -22,11 +22,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct FunputApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var settings = AppSettings.shared
+    @State private var updater = UpdaterManager()
 
     var body: some Scene {
         MenuBarExtra(isInserted: menuBarBinding) {
             StatusMenu()
                 .environment(settings)
+                .environment(updater)
         } label: {
             MenuBarLabel()
                 .environment(settings)
@@ -35,6 +37,7 @@ struct FunputApp: App {
         Window("Funput Settings", id: WindowID.settings) {
             SettingsView()
                 .environment(settings)
+                .environment(updater)
                 .frame(minWidth: Theme.settingsMinWidth, minHeight: Theme.settingsMinHeight)
         }
         .windowResizability(.contentSize)

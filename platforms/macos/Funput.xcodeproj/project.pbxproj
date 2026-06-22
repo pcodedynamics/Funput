@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		5F0EF4A42FE302FA0036210A /* InputMethodKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5F0EF4A32FE302FA0036210A /* InputMethodKit.framework */; };
+		5FA0000000000000000000A3 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 5FA0000000000000000000A2 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -42,6 +43,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5F0EF4A42FE302FA0036210A /* InputMethodKit.framework in Frameworks */,
+				5FA0000000000000000000A3 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,6 +96,7 @@
 			);
 			name = Funput;
 			packageProductDependencies = (
+				5FA0000000000000000000A2 /* Sparkle */,
 			);
 			productName = Funput;
 			productReference = 5F0EF48E2FE2FEF40036210A /* Funput.app */;
@@ -124,6 +127,9 @@
 			);
 			mainGroup = 5F0EF4852FE2FEF40036210A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5FA0000000000000000000A1 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 5F0EF48F2FE2FEF40036210A /* Products */;
 			projectDirPath = "";
@@ -398,6 +404,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5FA0000000000000000000A1 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5FA0000000000000000000A2 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5FA0000000000000000000A1 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 5F0EF4862FE2FEF40036210A /* Project object */;
 }
