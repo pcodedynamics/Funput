@@ -203,8 +203,11 @@ jobs:
         if: needs.version.outputs.version != ''
         run: |
           V="${{ needs.version.outputs.version }}"
+          # Stamp only the app version (read by getVersion / shown in Settings). Do
+          # NOT stamp the crate version in Cargo.toml — it would diverge from the
+          # committed Cargo.lock and break `cargo build --locked` below. The crate
+          # version is internal/cosmetic; the .deb version comes from -DFUNPUT_VERSION.
           node -e "const fs=require('fs');const f='platforms/linux/src-tauri/tauri.conf.json';const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n')" "$V"
-          node -e "const fs=require('fs');const f='platforms/linux/src-tauri/Cargo.toml';let s=fs.readFileSync(f,'utf8');s=s.replace(/^version = \".*\"/m,'version = \"'+process.argv[1]+'\"');fs.writeFileSync(f,s)" "$V"
 
       - name: Build shared UI
         run: |
