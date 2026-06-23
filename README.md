@@ -37,4 +37,4 @@ Bug report, thảo luận và đóng góp đều được chào đón.
 
 ## License
 
-[MIT](LICENSE) — © PulseFu
+[MIT](LICENSE) — © Funput

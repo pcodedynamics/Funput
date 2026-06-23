@@ -7,9 +7,9 @@
   <description>Funput Vietnamese Input Method (Telex &amp; VNI)</description>
   <exec>@IBUS_ENGINE_PATH@ --ibus</exec>
   <version>@FUNPUT_VERSION@</version>
-  <author>PulseFu</author>
+  <author>Funput</author>
   <license>MIT</license>
-  <homepage>https://github.com/PulseFu/Funput</homepage>
+  <homepage>https://github.com/Funput/Funput</homepage>
   <textdomain>funput</textdomain>
   <engines>
     <engine>
@@ -18,7 +18,7 @@
       <description>Vietnamese Telex &amp; VNI</description>
       <language>vi</language>
       <license>MIT</license>
-      <author>PulseFu</author>
+      <author>Funput</author>
       <icon>funput</icon>
       <layout>us</layout>
       <symbol>FU</symbol>

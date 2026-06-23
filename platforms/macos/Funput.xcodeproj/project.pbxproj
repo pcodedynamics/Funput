@@ -324,7 +324,7 @@
 				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Vendor";
 				MARKETING_VERSION = 1.2026.1;
 				OTHER_LDFLAGS = "-lfunput_ffi";
-				PRODUCT_BUNDLE_IDENTIFIER = com.pulsefu.inputmethod.Funput;
+				PRODUCT_BUNDLE_IDENTIFIER = app.funput.inputmethod.Funput;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -363,7 +363,7 @@
 				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Vendor";
 				MARKETING_VERSION = 1.2026.1;
 				OTHER_LDFLAGS = "-lfunput_ffi";
-				PRODUCT_BUNDLE_IDENTIFIER = com.pulsefu.inputmethod.Funput;
+				PRODUCT_BUNDLE_IDENTIFIER = app.funput.inputmethod.Funput;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

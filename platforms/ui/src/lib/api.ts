@@ -93,8 +93,8 @@ export const HOTKEYS: { id: Hotkey; caps: string[] }[] = [
 
 // Canonical Funput links, shared by every platform's About screen.
 export const LINKS = {
-  github: "https://github.com/PulseFu/Funput",
-  website: "https://funput.pulsefu.com/",
+  github: "https://github.com/Funput/Funput",
+  website: "https://funput.app/",
 };
 
 /// Open a URL in the system browser. In Tauri this goes through the `open_url`

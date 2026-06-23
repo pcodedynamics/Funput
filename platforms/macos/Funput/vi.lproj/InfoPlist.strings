@@ -1,5 +1,5 @@
 /* Friendly name shown in System Settings → Input Sources and the input menu.
    The key is the input-mode identifier (also the TISInputSourceID). */
-"com.pulsefu.inputmethod.Funput.Vietnamese" = "Funput";
+"app.funput.inputmethod.Funput.Vietnamese" = "Funput";
 "CFBundleName" = "Funput";
 "CFBundleDisplayName" = "Funput";

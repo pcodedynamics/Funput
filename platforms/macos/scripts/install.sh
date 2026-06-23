@@ -34,7 +34,7 @@ rm -rf "$DEST/Funput.app"
 cp -R "$APP_PATH" "$DEST/Funput.app"
 
 # LaunchServices keys input sources by bundle id. The DerivedData build shares
-# com.pulsefu.Funput, so unregister those and register the installed copy — else
+# app.funput.inputmethod.Funput, so unregister those and register the installed copy — else
 # the input source never shows up in System Settings.
 LSR="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 "$LSR" -dump 2>/dev/null | grep -oE '/Users/[^ ]*DerivedData[^ ]*Funput.app' | sort -u \

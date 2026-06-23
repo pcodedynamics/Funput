@@ -32,8 +32,8 @@ IBusComponent *makeComponent() {
         "Funput Vietnamese Input Method (Telex & VNI)",
         FUNPUT_VERSION,
         "MIT",
-        "PulseFu",
-        "https://github.com/PulseFu/Funput",
+        "Funput",
+        "https://github.com/Funput/Funput",
         FUNPUT_IBUS_ENGINE_PATH " --ibus",
         "funput");
 
@@ -43,7 +43,7 @@ IBusComponent *makeComponent() {
         "Vietnamese Telex & VNI",  // description
         "vi",                      // language
         "MIT",                     // license
-        "PulseFu",                 // author
+        "Funput",                 // author
         "funput",                  // icon
         "us");                     // keyboard layout
 

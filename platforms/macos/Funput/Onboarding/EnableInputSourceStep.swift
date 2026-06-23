@@ -52,7 +52,7 @@ struct EnableInputSourceStep: View {
     /// True when a Funput input source is in the enabled list. Matches by bundle id
     /// so it covers every input mode the bundle vends.
     private static func funputIsEnabled() -> Bool {
-        let bundleID = Bundle.main.bundleIdentifier ?? "com.pulsefu.inputmethod.Funput"
+        let bundleID = Bundle.main.bundleIdentifier ?? "app.funput.inputmethod.Funput"
         guard let list = TISCreateInputSourceList(nil, false)?.takeRetainedValue() as? [TISInputSource]
         else {
             return false
