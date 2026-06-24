@@ -2,9 +2,12 @@
 
 #include <string>
 
-#include "boundary.h"   // from platforms/linux/common (via funput_linux_common)
-#include "ffi_handle.h" // from platforms/linux/common (via funput_linux_common)
-#include "settings.h"   // from platforms/linux/common
+#include <glib-unix.h>
+
+#include "boundary.h"       // from platforms/linux/common (via funput_linux_common)
+#include "ffi_handle.h"     // from platforms/linux/common (via funput_linux_common)
+#include "settings.h"       // from platforms/linux/common
+#include "settings_watch.h" // from platforms/linux/common
 
 namespace {
 
@@ -17,6 +20,10 @@ struct EngineState {
     // overrides it. (Per-app auto-switch is intentionally not in the IBus v1 shell —
     // IBus exposes no reliable focused-app id, especially on Wayland.)
     bool effectiveEnabled_ = true;
+    // Live settings reload: an inotify fd watched on the GLib main loop, so changes
+    // from the Settings app apply immediately (not just on the next focus-in).
+    funput::SettingsWatcher settingsWatcher_;
+    guint settingsSource_ = 0; // g_unix_fd_add id; removed in finalize
 };
 
 } // namespace
@@ -122,6 +129,17 @@ void toggleEnabled(IBusEngine *engine, EngineState *st) {
 
 } // namespace
 
+// Live settings reload: the inotify fd became readable (the Settings app rewrote
+// settings.json). Force a re-read — inotify already signalled the change and
+// st_mtime's 1-second resolution would otherwise miss rapid edits.
+static gboolean funput_on_settings_fd(gint /*fd*/, GIOCondition /*cond*/, gpointer user_data) {
+    EngineState *st = FUNPUT_ENGINE(user_data)->state;
+    if (st->settingsWatcher_.drain() && st->settings_.reload()) {
+        applySettings(st);
+    }
+    return G_SOURCE_CONTINUE;
+}
+
 // --- IBusEngine vfuncs -----------------------------------------------------
 static gboolean ibus_funput_engine_process_key_event(IBusEngine *engine, guint keyval,
                                                  guint /*keycode*/, guint modifiers) {
@@ -172,8 +190,9 @@ static gboolean ibus_funput_engine_process_key_event(IBusEngine *engine, guint k
     return TRUE;
 }
 
-// Focus-in / enable: pick up settings changed by the Tauri Settings app (cheap
-// mtime check). No per-app auto-switch in the IBus v1 shell (see EngineState).
+// Focus-in / enable: fallback mtime check for settings changed while unfocused (the
+// live watcher applies changes during focus). No per-app auto-switch in the IBus v1
+// shell (see EngineState).
 static void ibus_funput_engine_focus_in(IBusEngine *engine) {
     EngineState *st = FUNPUT_ENGINE(engine)->state;
     if (st->settings_.reloadIfChanged()) applySettings(st);
@@ -202,10 +221,20 @@ static void ibus_funput_engine_reset(IBusEngine *engine) {
 static void ibus_funput_engine_init(IBusFunputEngine *self) {
     self->state = new EngineState();
     applySettings(self->state); // focus_in reloads the real values from disk
+
+    // Watch settings.json on the GLib main loop so Settings-app changes apply live.
+    if (self->state->settingsWatcher_.fd() >= 0) {
+        self->state->settingsSource_ = g_unix_fd_add(
+            self->state->settingsWatcher_.fd(), G_IO_IN, funput_on_settings_fd, self);
+    }
 }
 
 static void ibus_funput_engine_finalize(GObject *object) {
     IBusFunputEngine *self = FUNPUT_ENGINE(object);
+    if (self->state && self->state->settingsSource_ != 0) {
+        g_source_remove(self->state->settingsSource_);
+        self->state->settingsSource_ = 0;
+    }
     delete self->state;
     self->state = nullptr;
     G_OBJECT_CLASS(ibus_funput_engine_parent_class)->finalize(object);

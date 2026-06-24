@@ -32,6 +32,26 @@ std::string recentAppsPath() {
 FunputEngine::FunputEngine(fcitx::Instance *instance) : instance_(instance) {
     // Apply defaults now; activate() reloads the real values from disk on focus-in.
     applySettings();
+
+    // Live settings reload: when the Settings app rewrites settings.json, apply it
+    // immediately instead of waiting for the next focus-in. The inotify fd is driven
+    // by Fcitx5's own event loop, so the callback runs on this thread (no locking).
+    if (settingsWatcher_.fd() >= 0) {
+        settingsWatch_ = instance_->eventLoop().addIOEvent(
+            settingsWatcher_.fd(), fcitx::IOEventFlag::In,
+            [this](fcitx::EventSourceIO *, int, fcitx::IOEventFlags) {
+                if (settingsWatcher_.drain()) onSettingsChanged();
+                return true;
+            });
+    }
+}
+
+void FunputEngine::onSettingsChanged() {
+    // Force a re-read (inotify already told us it changed; mtime resolution is 1s).
+    if (!settings_.reload()) return;
+    applySettings();
+    // applySettings() reset the baseline; re-apply the exclusion for the focused app.
+    applyPerAppDefault(lastProgram_);
 }
 
 void FunputEngine::applySettings() {
@@ -215,10 +235,11 @@ void FunputEngine::reset(const fcitx::InputMethodEntry &, fcitx::InputContextEve
 }
 
 void FunputEngine::activate(const fcitx::InputMethodEntry &, fcitx::InputContextEvent &event) {
-    // Pick up settings changed by the Tauri Settings app (cheap mtime check).
+    // Pick up settings changed while unfocused (fallback to the live watcher).
     if (settings_.reloadIfChanged()) applySettings();
     // Per-app auto-switch on focus-in, mirroring the macOS shell's activateServer.
     const std::string program = event.inputContext()->program();
+    lastProgram_ = program; // remembered for live settings reloads
     applyPerAppDefault(program);
     noteRecentApp(program);
 }

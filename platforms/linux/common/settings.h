@@ -1,7 +1,8 @@
-// Shared settings bridge. The Tauri Settings app and this addon are separate
-// processes, so they sync through ~/.config/Funput/settings.json (the same file
-// the Windows shell writes via `dirs::config_dir()`). The addon reads it on
-// startup and reloads when the file's mtime changes (cheap, checked on focus-in).
+// Shared settings bridge. The Settings app and this addon are separate processes,
+// so they sync through ~/.config/Funput/settings.json (the same file the Windows
+// shell writes via `dirs::config_dir()`). The addon reads it on startup, reloads
+// live when a file watcher (SettingsWatcher) fires, and also re-checks the mtime on
+// focus-in as a fallback.
 
 #ifndef FUNPUT_SETTINGS_H
 #define FUNPUT_SETTINGS_H
@@ -33,9 +34,14 @@ struct Settings {
     // Absolute path to ~/.config/Funput/settings.json (XDG-aware).
     static std::string path();
 
-    // Re-read from disk only if the file changed since last load. Returns true if
+    // Re-read from disk only if the mtime changed since last load. Returns true if
     // values changed. On missing/corrupt file, keeps current (default) values.
     bool reloadIfChanged();
+
+    // Force a re-read regardless of mtime (used by the file watcher: inotify already
+    // told us the file changed, and st_mtime's 1-second resolution would otherwise
+    // miss two writes within the same second). Returns true if values changed.
+    bool reload();
 
     // Persist the current values (used when the VI/EN hotkey toggles `enabled`).
     void save() const;

@@ -30,7 +30,7 @@ add_custom_command(
 add_custom_target(funput_ffi DEPENDS "${FUNPUT_FFI_SO}")
 
 # --- Shared static lib ------------------------------------------------------
-add_library(funput_linux_common STATIC settings.cpp)
+add_library(funput_linux_common STATIC settings.cpp settings_watch.cpp)
 target_compile_features(funput_linux_common PUBLIC cxx_std_17)
 # This static lib is linked into shared objects (the Fcitx5 addon MODULE) and PIE
 # executables (the IBus engine), so its objects must be position-independent.

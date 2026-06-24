@@ -62,9 +62,17 @@ bool Settings::reloadIfChanged() {
 
     struct stat st {};
     if (::stat(p.c_str(), &st) != 0) return false; // missing → keep current values
-    const auto mtime = static_cast<int64_t>(st.st_mtime);
-    if (mtime == lastMtime_) return false;
-    lastMtime_ = mtime;
+    if (static_cast<int64_t>(st.st_mtime) == lastMtime_) return false;
+    return reload();
+}
+
+bool Settings::reload() {
+    const std::string p = path();
+    if (p.empty()) return false;
+
+    struct stat st {};
+    if (::stat(p.c_str(), &st) != 0) return false; // missing → keep current values
+    lastMtime_ = static_cast<int64_t>(st.st_mtime);
 
     std::ifstream f(p);
     if (!f) return false;

@@ -17,7 +17,8 @@ platforms/linux/
 ├─ common/      Code dùng chung mọi shell Linux (Fcitx5, IBus). Khép kín, không
 │  │            biết gì về framework — link vào qua add_subdirectory().
 │  ├─ ffi_handle.h           RAII wrapper quanh FunputEngine* (funput.h)
-│  └─ settings.{h,cpp}       đọc/ghi ~/.config/Funput/settings.json (reload theo mtime)
+│  ├─ settings.{h,cpp}       đọc/ghi ~/.config/Funput/settings.json (mtime + reload())
+│  └─ settings_watch.{h,cpp} theo dõi file (inotify) → áp dụng settings tức thì
 ├─ fcitx5/      Addon C++ (libfunput.so) — gọi funput-ffi (C ABI), link common. PHẦN "gõ".
 │  ├─ src/funput_engine.cpp  InputMethodEngineV2: keyEvent → preedit/commit
 │  └─ data/*.conf.in         metadata addon + input method
@@ -127,5 +128,6 @@ Mở một app GTK (gedit) và một app Qt:
 - **Chỉ `.deb`** (chưa rpm/AppImage). Hai gói `funput` (Fcitx5) và `funput-ibus` hiện đóng gói riêng,
   mỗi gói tự bundle `libfunput_ffi.so` + app Settings (gói chung `funput-common` để sau).
 - Hotkey `alt_shift` (combo chỉ-modifier) chưa hỗ trợ; UI Linux chỉ hiện `ctrl_backtick`/`ctrl_space`.
-- Settings đồng bộ theo **mtime ở lần focus-in kế tiếp** — có thể trễ một nhịp (inotify để sau).
+- Settings **áp dụng tức thì** qua theo dõi file (inotify, `common/settings_watch.*`): Fcitx5 wire fd
+  vào event loop riêng, IBus qua `g_unix_fd_add` trên GLib loop; vẫn giữ fallback so mtime lúc focus-in.
 - App Settings là **GTK4 + libadwaita**, yêu cầu **Ubuntu 24.04+** (GTK 4.14 / libadwaita 1.5).
