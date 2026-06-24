@@ -10,7 +10,7 @@ use std::rc::Rc;
 
 use adw::prelude::*;
 use adw::{
-    AboutWindow, ActionRow, Application, ComboRow, PreferencesGroup, PreferencesPage,
+    AboutDialog, ActionRow, Application, ComboRow, PreferencesGroup, PreferencesPage,
     PreferencesWindow, SwitchRow,
 };
 use gtk::{Align, Button, Image, StringList};
@@ -162,23 +162,26 @@ fn keyboard_page() -> PreferencesPage {
         .icon_name("preferences-desktop-keyboard-shortcuts-symbolic")
         .build();
     let group = PreferencesGroup::builder()
-        .description("Bật/tắt gõ tiếng Việt nhanh. (Alt + Shift chưa được engine Linux hỗ trợ.)")
+        .description("Bật/tắt gõ tiếng Việt nhanh.")
         .build();
 
+    // Only the combos the Linux engines actually handle. Alt+Shift (a modifier-only
+    // combo) is unsupported by both shells (funput_engine.cpp / engine.cpp return
+    // false), so it is not offered here.
     let row = ComboRow::builder()
         .title("Phím tắt")
-        .model(&StringList::new(&["Ctrl + `", "Ctrl + Space", "Alt + Shift"]))
+        .model(&StringList::new(&["Ctrl + `", "Ctrl + Space"]))
         .build();
     row.set_selected(match s.toggle_hotkey {
-        Hotkey::CtrlBacktick => 0,
         Hotkey::CtrlSpace => 1,
-        Hotkey::AltShift => 2,
+        // CtrlBacktick — and any legacy AltShift value — show as Ctrl+` (the default).
+        _ => 0,
     });
     row.connect_selected_notify(|row| {
-        let h = match row.selected() {
-            0 => Hotkey::CtrlBacktick,
-            1 => Hotkey::CtrlSpace,
-            _ => Hotkey::AltShift,
+        let h = if row.selected() == 1 {
+            Hotkey::CtrlSpace
+        } else {
+            Hotkey::CtrlBacktick
         };
         Settings::update(|s| s.toggle_hotkey = h);
     });
@@ -368,7 +371,7 @@ fn about_page(parent: &PreferencesWindow) -> PreferencesPage {
 }
 
 fn show_about(parent: &PreferencesWindow) {
-    let about = AboutWindow::builder()
+    let about = AboutDialog::builder()
         .application_name("Funput")
         .application_icon("funput")
         .version(env!("CARGO_PKG_VERSION"))
@@ -377,9 +380,8 @@ fn show_about(parent: &PreferencesWindow) {
         .website("https://funput.app/")
         .issue_url("https://github.com/Funput/Funput/issues")
         .license_type(gtk::License::MitX11)
-        .transient_for(parent)
-        .modal(true)
         .build();
     about.add_link("GitHub", "https://github.com/Funput/Funput");
-    about.present();
+    // AdwDialog presents itself relative to a parent widget (no transient/modal).
+    about.present(Some(parent));
 }
