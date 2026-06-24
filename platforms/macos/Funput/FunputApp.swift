@@ -24,6 +24,16 @@ struct FunputApp: App {
     @State private var settings = AppSettings.shared
     @State private var updater = UpdaterManager()
 
+    init() {
+        // Funput is a Vietnamese input method and its own UI is hardcoded Vietnamese,
+        // so force the app's locale to Vietnamese. Without this, Sparkle's standard
+        // update dialogs follow the *system* language and show English on the many
+        // Macs that run in English — this makes them resolve to Sparkle's bundled
+        // vi.lproj instead. Sparkle's UI is shown on demand (well after launch), so
+        // setting this here is early enough; the value also persists for next launch.
+        UserDefaults.standard.set(["vi"], forKey: "AppleLanguages")
+    }
+
     var body: some Scene {
         MenuBarExtra(isInserted: menuBarBinding) {
             StatusMenu()
