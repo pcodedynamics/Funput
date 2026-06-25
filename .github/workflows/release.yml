@@ -139,7 +139,7 @@ jobs:
           name: macos
           path: ${{ runner.temp }}/out/*
 
-  # ---- Windows: shared UI + portable .exe -----------------------------------
+  # ---- Windows: native Slint portable .exe ----------------------------------
   windows:
     needs: version
     runs-on: windows-latest
@@ -149,45 +149,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Rust target
-        run: rustup target add x86_64-pc-windows-msvc
-
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: platforms/windows/src-tauri -> target
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
+          workspaces: platforms/windows -> target
 
       - name: Stamp version from tag
         if: needs.version.outputs.version != ''
         run: |
           V="${{ needs.version.outputs.version }}"
-          # App version (read by getVersion + embedded in the exe).
-          node -e "const fs=require('fs');const f='platforms/windows/src-tauri/tauri.conf.json';const j=JSON.parse(fs.readFileSync(f));j.version=process.argv[1];fs.writeFileSync(f,JSON.stringify(j,null,2)+'\n')" "$V"
-          # Crate version so `cargo` logs + the package metadata match the tag too.
-          node -e "const fs=require('fs');const f='platforms/windows/src-tauri/Cargo.toml';let s=fs.readFileSync(f,'utf8');s=s.replace(/^version = \".*\"/m,'version = \"'+process.argv[1]+'\"');fs.writeFileSync(f,s)" "$V"
-
-      - name: Build shared UI
-        run: |
-          pnpm -C platforms/ui install --no-frozen-lockfile
-          pnpm -C platforms/ui build
+          # Crate version is the single source of truth: cargo logs, the exe's
+          # embedded version resource, and the About pane (CARGO_PKG_VERSION).
+          node -e "const fs=require('fs');const f='platforms/windows/Cargo.toml';let s=fs.readFileSync(f,'utf8');s=s.replace(/^version = \".*\"/m,'version = \"'+process.argv[1]+'\"');fs.writeFileSync(f,s)" "$V"
 
       - name: Build Funput.exe
-        working-directory: platforms/windows/src-tauri
+        working-directory: platforms/windows
         run: cargo build --release
 
       - name: Stage artifact
         run: |
           V="${{ needs.version.outputs.version }}"; V="${V:-dev}"
           OUT="$RUNNER_TEMP/out"; mkdir -p "$OUT"
-          cp platforms/windows/src-tauri/target/release/funput.exe "$OUT/Funput-$V.exe"
+          cp platforms/windows/target/release/funput.exe "$OUT/Funput-$V.exe"
           sha256sum "$OUT/Funput-$V.exe" | awk '{print $1}' > "$OUT/Funput-$V.exe.sha256"
 
       - uses: actions/upload-artifact@v4

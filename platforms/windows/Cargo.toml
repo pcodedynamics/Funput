@@ -1,0 +1,57 @@
+# Standalone package (excluded from the repo workspace): pulls in slint + the
+# `windows` crate, which only build on a Windows target. An empty [workspace]
+# table detaches it so `cargo` inside this dir does not attach to the repo root.
+[package]
+name = "funput-windows"
+version = "1.2026.1"
+edition = "2021"
+description = "Funput for Windows — global keyboard hook + tray + native Slint UI."
+
+[workspace]
+
+[[bin]]
+name = "funput"
+path = "src/main.rs"
+
+[build-dependencies]
+slint-build = "1.17"
+winresource = "0.1"
+
+[dependencies]
+# Native UI. Default features bring the winit backend + FemtoVG renderer; the
+# Fluent (Windows 11) widget style is selected in build.rs. `raw-window-handle-06`
+# exposes the HWND so we can apply the Mica backdrop.
+slint = { version = "1.17", features = ["raw-window-handle-06"] }
+# Tray icon + menu — the standalone crate Tauri itself wraps, so no WebView2. The
+# menu types come from tray-icon's re-exported `muda` (kept version-matched).
+tray-icon = "0.24"
+# Launch-at-login (writes the HKCU\...\Run registry value).
+auto-launch = "0.5"
+# Open external links in the system browser.
+open = "5"
+# Mica / Acrylic window backdrop via DWM; works on any raw-window-handle.
+window-vibrancy = "0.7"
+# Decode the tray PNGs to RGBA for `tray_icon::Icon::from_rgba`.
+image = { version = "0.25", default-features = false, features = ["png"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dirs = "5"
+funput-core = { path = "../../crates/funput-core" }
+funput-engine = { path = "../../crates/funput-engine" }
+funput-desktop = { path = "../../crates/funput-desktop" }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Accessibility",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Threading",
+    "Win32_System_Registry",
+] }
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true

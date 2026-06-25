@@ -1,0 +1,147 @@
+// Shared design tokens + reusable widgets for the Funput Settings/Onboarding
+// windows. Colors come from the Fluent `Palette` so the UI follows the system
+// light/dark theme (to match the Mica backdrop); the brand accent stays fixed.
+
+import { Palette } from "std-widgets.slint";
+
+export struct SegOption {
+    id: string,
+    label: string,
+}
+
+// One excluded / recent application row. Mirrors `settings::ExcludedApp`.
+export struct AppEntry {
+    id: string,
+    name: string,
+}
+
+export global Theme {
+    // Funput brand accent (kept across platforms; #5b63f5).
+    out property <color> accent: #5b63f5;
+    out property <color> accent-text: #ffffff;
+
+    out property <length> sp-xs: 4px;
+    out property <length> sp-sm: 8px;
+    out property <length> sp-md: 14px;
+    out property <length> sp-lg: 20px;
+    out property <length> sp-xl: 32px;
+
+    out property <length> r-card: 12px;
+    out property <length> r-control: 8px;
+
+    out property <bool> dark: Palette.color-scheme == ColorScheme.dark;
+
+    // Semi-transparent fills so the Mica backdrop shows through; dim text shades.
+    // Defined as light/dark literals (avoids brush methods on Palette).
+    out property <brush> card-bg: root.dark ? #2c2c30d9 : #ffffffd9;
+    out property <brush> sidebar-bg: root.dark ? #1c1c2055 : #ffffff70;
+    out property <color> subtle: root.dark ? #ffffff99 : #1c1c1e99;
+    out property <color> faint: root.dark ? #ffffff80 : #1c1c1e80;
+}
+
+// A small keycap badge, e.g. for "Ctrl" + "`".
+export component KeyCap inherits Rectangle {
+    in property <string> label;
+    height: 22px;
+    border-radius: 5px;
+    background: Palette.control-background;
+    border-width: 1px;
+    border-color: Palette.border;
+    HorizontalLayout {
+        padding-left: 7px;
+        padding-right: 7px;
+        Text {
+            text: root.label;
+            vertical-alignment: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: Palette.foreground;
+        }
+    }
+}
+
+// A frosted card container; callers drop rows/controls inside as children.
+export component Card inherits Rectangle {
+    border-radius: Theme.r-card;
+    background: Theme.card-bg;
+    border-width: 1px;
+    border-color: Palette.border;
+    VerticalLayout {
+        padding: Theme.sp-lg;
+        spacing: Theme.sp-md;
+        @children
+    }
+}
+
+// A settings row: title (+ optional subtitle) on the left, control(s) on the right.
+export component Row {
+    in property <string> title;
+    in property <string> subtitle;
+    HorizontalLayout {
+        spacing: Theme.sp-md;
+        VerticalLayout {
+            horizontal-stretch: 1;
+            alignment: center;
+            spacing: 2px;
+            Text {
+                text: root.title;
+                font-size: 14px;
+                color: Palette.foreground;
+            }
+            if root.subtitle != "": Text {
+                text: root.subtitle;
+                font-size: 12px;
+                color: Theme.subtle;
+                wrap: word-wrap;
+            }
+        }
+        VerticalLayout {
+            horizontal-stretch: 0;
+            alignment: center;
+            @children
+        }
+    }
+}
+
+// A pill segmented control. `current` highlights the active option; `changed`
+// fires the chosen option's id (state lives in the parent, not here).
+export component Segmented {
+    in property <[SegOption]> options;
+    in property <string> current;
+    callback changed(string);
+    HorizontalLayout {
+        spacing: 3px;
+        for opt in root.options: Rectangle {
+            background: opt.id == root.current ? Theme.accent : Palette.control-background;
+            border-radius: Theme.r-control;
+            HorizontalLayout {
+                padding-left: 12px;
+                padding-right: 12px;
+                padding-top: 6px;
+                padding-bottom: 6px;
+                Text {
+                    text: opt.label;
+                    color: opt.id == root.current ? Theme.accent-text : Palette.foreground;
+                    font-size: 13px;
+                    font-weight: opt.id == root.current ? 600 : 400;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+            TouchArea {
+                clicked => {
+                    root.changed(opt.id);
+                }
+            }
+        }
+    }
+}
+
+// A progress dot for the onboarding wizard.
+export component Dot inherits Rectangle {
+    in property <bool> on;
+    width: 7px;
+    height: 7px;
+    border-radius: 3.5px;
+    background: root.on ? Theme.accent : Palette.control-background;
+}
