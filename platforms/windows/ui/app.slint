@@ -113,11 +113,16 @@ export component SettingsWindow inherits Window {
                         padding-left: 12px;
                         spacing: 10px;
                         alignment: start;
-                        Image {
-                            source: item.icon;
-                            colorize: root.active == item.id ? Theme.accent-text : Palette.foreground;
-                            width: 17px;
-                            height: 17px;
+                        // Wrap in a centring column so the fixed-size icon lines up
+                        // vertically with the label instead of sitting at the top.
+                        VerticalLayout {
+                            alignment: center;
+                            Image {
+                                source: item.icon;
+                                colorize: root.active == item.id ? Theme.accent-text : Palette.foreground;
+                                width: 17px;
+                                height: 17px;
+                            }
                         }
                         Text {
                             text: item.label;
