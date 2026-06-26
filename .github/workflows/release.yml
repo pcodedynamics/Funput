@@ -2,15 +2,32 @@ name: Release
 
 # One tag → all platforms. Pushing a tag like v1.2026.1 builds the macOS .pkg, the
 # Windows .exe, and the Linux .debs — all stamped with the **tag version** (single
-# source of truth) — and publishes them to one GitHub Release. workflow_dispatch
-# builds without publishing (verify secrets / smoke test).
+# source of truth) — and publishes them to one public GitHub Release.
+#
+# workflow_dispatch is for testing the *full* pipeline (incl. EdDSA signing + the
+# update feeds) without disturbing users:
+#   - version empty            → compile-only smoke test (no signing/feed/publish).
+#   - version set, publish off → build + sign + emit feeds; artifacts only, no Release.
+#   - version set, publish on  → same, plus a **prerelease** (never becomes the
+#                                `latest` the auto-updater serves).
 #
 # The per-platform build steps live in reusable workflows (build-*.yml) and are
 # called below; artifacts they upload are gathered by `publish` in the same run.
 on:
   push:
     tags: ["v*"]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Build version, e.g. 1.2026.2-rc1. Empty = compile-only smoke test (no signing/feed)."
+        required: false
+        type: string
+        default: ""
+      publish:
+        description: "Publish a GitHub prerelease with the built artifacts (never becomes `latest`)."
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -25,16 +42,30 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.v.outputs.version }}
-      is_release: ${{ steps.v.outputs.is_release }}
+      publish: ${{ steps.v.outputs.publish }}
+      prerelease: ${{ steps.v.outputs.prerelease }}
     steps:
       - id: v
+        env:
+          DISPATCH_VERSION: ${{ inputs.version }}
+          DISPATCH_PUBLISH: ${{ inputs.publish }}
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            # Tag push → full public release.
             echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-            echo "is_release=true" >> "$GITHUB_OUTPUT"
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
           else
-            echo "version=" >> "$GITHUB_OUTPUT"
-            echo "is_release=false" >> "$GITHUB_OUTPUT"
+            # Manual dispatch → use the provided version (may be empty for a
+            # compile-only smoke test). Any publish here is always a prerelease, so
+            # it never becomes the `latest` the auto-updater serves.
+            echo "version=${DISPATCH_VERSION}" >> "$GITHUB_OUTPUT"
+            if [[ "${DISPATCH_PUBLISH}" == "true" && -n "${DISPATCH_VERSION}" ]]; then
+              echo "publish=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "publish=false" >> "$GITHUB_OUTPUT"
+            fi
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
           fi
 
   # ---- Per-platform builds (reusable workflows) -----------------------------
@@ -63,7 +94,7 @@ jobs:
   # ---- Publish one release with all artifacts -------------------------------
   publish:
     needs: [version, macos, windows, linux]
-    if: needs.version.outputs.is_release == 'true'
+    if: needs.version.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -79,7 +110,7 @@ jobs:
           cp artifacts/linux-*/* out/ 2>/dev/null || true
           ls -l out
           {
-            echo "## Funput ${{ github.ref_name }}"
+            echo "## Funput v${{ needs.version.outputs.version }}"
             echo
             echo "### macOS"
             echo "- \`Funput-*.pkg\` — **cách thường (có quyền admin):** double-click để cài (mở Installer.app), nhập mật khẩu. Đã ký Developer ID Installer + notarized, không bị Gatekeeper chặn."
@@ -110,3 +141,8 @@ jobs:
             out/*.json
           body_path: notes.md
           generate_release_notes: true
+          # Dispatch runs have no pushed tag, so name it explicitly (the action
+          # creates the tag); tag pushes reuse the pushed ref. Dispatch publishes
+          # are always prereleases.
+          prerelease: ${{ needs.version.outputs.prerelease }}
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', needs.version.outputs.version) }}
