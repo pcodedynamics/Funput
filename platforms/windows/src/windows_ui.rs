@@ -10,7 +10,7 @@ use std::cell::RefCell;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
 use crate::settings::{Hotkey, Method, ToneStyle};
-use crate::{commands, shell, AppEntry, OnboardingWindow, SettingsWindow};
+use crate::{commands, shell, AppEntry, OnboardingWindow, SettingsWindow, ShortcutEntry};
 
 thread_local! {
     static SETTINGS: RefCell<Option<SettingsWindow>> = const { RefCell::new(None) };
@@ -47,6 +47,7 @@ fn populate_settings(win: &SettingsWindow) {
     win.set_update_version("".into());
     win.set_update_message("".into());
     refresh_apps(win);
+    win.set_shortcuts(shortcuts_model(&shell::shortcuts()));
 }
 
 fn wire_settings(win: &SettingsWindow) {
@@ -103,6 +104,31 @@ fn wire_settings(win: &SettingsWindow) {
         if let Some(win) = w.upgrade() {
             refresh_apps(&win);
         }
+    });
+
+    let w = win.as_weak();
+    win.on_add_shortcut(move || {
+        commands::add_shortcut();
+        if let Some(win) = w.upgrade() {
+            win.set_shortcuts(shortcuts_model(&shell::shortcuts()));
+        }
+    });
+
+    let w = win.as_weak();
+    win.on_remove_shortcut(move |index| {
+        commands::remove_shortcut(index.max(0) as usize);
+        if let Some(win) = w.upgrade() {
+            win.set_shortcuts(shortcuts_model(&shell::shortcuts()));
+        }
+    });
+
+    // Editing a field only persists (engine + settings); the model is NOT rebuilt,
+    // so the LineEdit keeps its text and caret while the user types.
+    win.on_edit_trigger(|index, text| {
+        commands::set_shortcut_trigger(index.max(0) as usize, text.to_string());
+    });
+    win.on_edit_expansion(|index, text| {
+        commands::set_shortcut_expansion(index.max(0) as usize, text.to_string());
     });
 
     win.on_open_link(|url| commands::open_url(url.as_str()));
@@ -198,6 +224,17 @@ fn apps_model(apps: &[crate::settings::ExcludedApp]) -> ModelRc<AppEntry> {
         .map(|a| AppEntry {
             id: a.id.clone().into(),
             name: a.name.clone().into(),
+        })
+        .collect();
+    ModelRc::new(VecModel::from(rows))
+}
+
+fn shortcuts_model(shortcuts: &[crate::settings::Shortcut]) -> ModelRc<ShortcutEntry> {
+    let rows: Vec<ShortcutEntry> = shortcuts
+        .iter()
+        .map(|s| ShortcutEntry {
+            trigger: s.trigger.clone().into(),
+            expansion: s.expansion.clone().into(),
         })
         .collect();
     ModelRc::new(VecModel::from(rows))

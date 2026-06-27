@@ -1,0 +1,36 @@
+// Settings → "Phím chuyển": the VI/EN toggle hotkey.
+
+import { Palette } from "std-widgets.slint";
+import { Theme, Card, Row, Segmented, KeyCap } from "theme.slint";
+
+export component KeyboardPage inherits VerticalLayout {
+    in property <string> hotkey;
+    in property <[string]> hotkey-caps;
+    callback pick-hotkey(string);
+
+    spacing: Theme.sp-md;
+    Text { text: "Phím chuyển VI / EN"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
+    Card {
+        Row {
+            title: "Phím tắt";
+            subtitle: "Bật/tắt gõ tiếng Việt nhanh.";
+            Segmented {
+                options: [
+                    { id: "ctrl_backtick", label: "Ctrl `" },
+                    { id: "ctrl_space", label: "Ctrl Space" },
+                    { id: "alt_shift", label: "Alt Shift" },
+                ];
+                current: root.hotkey;
+                changed(v) => { root.pick-hotkey(v); }
+            }
+        }
+        Rectangle { height: 1px; background: Palette.border; }
+        Row {
+            title: "Đang dùng";
+            HorizontalLayout {
+                spacing: Theme.sp-xs;
+                for cap in root.hotkey-caps: KeyCap { label: cap; }
+            }
+        }
+    }
+}

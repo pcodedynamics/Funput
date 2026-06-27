@@ -1,8 +1,9 @@
 //! Round-trip tests: drive the `extern "C"` API exactly like a C caller would.
 
 use funput_ffi::{
-    funput_backspace, funput_buffer, funput_clear, funput_engine_free, funput_engine_new,
-    funput_process_char, funput_set_method, FunputResult, ACTION_NONE, ACTION_SEND,
+    funput_add_shortcut, funput_backspace, funput_buffer, funput_clear, funput_clear_shortcuts,
+    funput_engine_free, funput_engine_new, funput_process_char, funput_set_method, FunputResult,
+    ACTION_NONE, ACTION_SEND,
 };
 
 fn output(result: &FunputResult) -> String {
@@ -155,6 +156,73 @@ fn invalid_codepoint_is_noop() {
         // 0xD800 is a UTF-16 surrogate — not a valid Unicode scalar.
         let result = funput_process_char(engine, 0xD800);
         assert_eq!(result.action, ACTION_NONE);
+        funput_engine_free(engine);
+    }
+}
+
+/// Add a shortcut the way a host does: marshal both strings as UTF-32 slices.
+unsafe fn add_shortcut(engine: *mut funput_ffi::FunputEngine, trigger: &str, expansion: &str) {
+    let t: Vec<u32> = trigger.chars().map(|c| c as u32).collect();
+    let e: Vec<u32> = expansion.chars().map(|c| c as u32).collect();
+    unsafe { funput_add_shortcut(engine, t.as_ptr(), t.len(), e.as_ptr(), e.len()) };
+}
+
+#[test]
+fn shortcut_expands_through_ffi() {
+    unsafe {
+        let engine = funput_engine_new();
+        funput_set_method(engine, 0); // Telex
+        add_shortcut(engine, "vn", "Việt Nam");
+        add_shortcut(engine, "kg", "không");
+
+        let mut app = String::new();
+        for ch in "vn ".chars() {
+            let r = funput_process_char(engine, ch as u32);
+            if r.action == ACTION_NONE {
+                app.push(ch);
+            } else {
+                for _ in 0..r.backspace {
+                    app.pop();
+                }
+                app.push_str(&output(&r));
+            }
+        }
+        assert_eq!(app, "Việt Nam ");
+
+        funput_engine_free(engine);
+    }
+}
+
+#[test]
+fn clear_shortcuts_disables_expansion() {
+    unsafe {
+        let engine = funput_engine_new();
+        funput_set_method(engine, 0);
+        add_shortcut(engine, "vn", "Việt Nam");
+        funput_clear_shortcuts(engine);
+
+        // After clearing, the boundary returns Action::None (no expansion) — "vn" is a
+        // complete-enough syllable to be kept as-is, so the app sees the literal text.
+        funput_process_char(engine, 'v' as u32);
+        funput_process_char(engine, 'n' as u32);
+        let boundary = funput_process_char(engine, ' ' as u32);
+        assert_eq!(boundary.action, ACTION_NONE);
+
+        funput_engine_free(engine);
+    }
+}
+
+#[test]
+fn shortcut_null_safe() {
+    unsafe {
+        // Null handle: must not crash.
+        funput_clear_shortcuts(std::ptr::null_mut());
+        let t = [b'v' as u32, b'n' as u32];
+        funput_add_shortcut(std::ptr::null_mut(), t.as_ptr(), t.len(), t.as_ptr(), t.len());
+
+        // Null string pointers are treated as empty (empty trigger is ignored).
+        let engine = funput_engine_new();
+        funput_add_shortcut(engine, std::ptr::null(), 0, std::ptr::null(), 0);
         funput_engine_free(engine);
     }
 }

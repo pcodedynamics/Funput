@@ -10,6 +10,9 @@ import InputMethodKit
 @objc(FunputInputController)
 final class FunputInputController: IMKInputController {
     private let composer = FunputComposer()
+    /// Last `AppSettings.shortcutsRevision` pushed to the engine. `-1` forces a sync on
+    /// the first `syncSettings()` so the engine starts with the saved table.
+    private var lastSyncedShortcutsRevision = -1
 
     private enum KeyCode {
         static let backspace: UInt16 = 51
@@ -193,6 +196,16 @@ final class FunputInputController: IMKInputController {
         composer.setEnabled(settings.vietnameseEnabled)
         composer.setSmartRestore(settings.smartEnglishRestore)
         composer.setEagerRestore(settings.eagerRestore)
+
+        // Re-marshal the gõ tắt table only when it actually changed (cheap on the
+        // common keystroke path where nothing changed).
+        if lastSyncedShortcutsRevision != settings.shortcutsRevision {
+            composer.clearShortcuts()
+            for shortcut in settings.shortcuts where !shortcut.trigger.isEmpty {
+                composer.addShortcut(trigger: shortcut.trigger, expansion: shortcut.expansion)
+            }
+            lastSyncedShortcutsRevision = settings.shortcutsRevision
+        }
     }
 
     private func setMarked(_ text: String, _ client: IMKTextInput) {

@@ -9,6 +9,15 @@ struct ExcludedApp: Codable, Identifiable, Hashable {
     let name: String
 }
 
+/// A text-expansion shortcut (gõ tắt): typing `trigger` then a word boundary injects
+/// `expansion` (`vn` → `Việt Nam`). `id` is a stable UUID — not the trigger — so a row
+/// can be edited inline while its trigger is briefly empty or duplicated.
+struct TextShortcut: Codable, Identifiable, Hashable {
+    var id = UUID()
+    var trigger: String
+    var expansion: String
+}
+
 /// User preferences for Funput, persisted in `UserDefaults`. The Settings UI and
 /// (later) the `IMKInputController` live in the same process, so they share this
 /// store directly. `@Observable` drives live SwiftUI updates.
@@ -54,6 +63,17 @@ final class AppSettings {
     var excludedApps: [ExcludedApp] {
         didSet { defaults.set(try? JSONEncoder().encode(excludedApps), forKey: Keys.excludedApps) }
     }
+    /// Text-expansion shortcuts (gõ tắt). Persisted as JSON and pushed to the engine by
+    /// `FunputInputController`, which re-syncs whenever `shortcutsRevision` changes.
+    var shortcuts: [TextShortcut] {
+        didSet {
+            defaults.set(try? JSONEncoder().encode(shortcuts), forKey: Keys.shortcuts)
+            shortcutsRevision &+= 1
+        }
+    }
+    /// Bumped on every `shortcuts` mutation so the controller knows when to re-marshal
+    /// the table to the engine (instead of doing it on every keystroke). Not persisted.
+    @ObservationIgnored private(set) var shortcutsRevision = 0
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -77,6 +97,8 @@ final class AppSettings {
         hasCompletedOnboarding = defaults.bool(forKey: Keys.hasCompletedOnboarding)
         excludedApps = defaults.data(forKey: Keys.excludedApps)
             .flatMap { try? JSONDecoder().decode([ExcludedApp].self, from: $0) } ?? []
+        shortcuts = defaults.data(forKey: Keys.shortcuts)
+            .flatMap { try? JSONDecoder().decode([TextShortcut].self, from: $0) } ?? []
     }
 
     // MARK: - Excluded apps
@@ -98,6 +120,18 @@ final class AppSettings {
         excludedApps.removeAll { $0.id == id }
     }
 
+    // MARK: - Shortcuts (gõ tắt)
+
+    /// Append an empty shortcut for the user to fill in inline.
+    func addShortcut() {
+        shortcuts.append(TextShortcut(trigger: "", expansion: ""))
+    }
+
+    /// Remove a shortcut by its row id.
+    func removeShortcut(_ id: UUID) {
+        shortcuts.removeAll { $0.id == id }
+    }
+
     private enum Keys {
         static let inputMethod = "inputMethod"
         static let toneStyle = "toneStyle"
@@ -109,5 +143,6 @@ final class AppSettings {
         static let showMenuBarIcon = "showMenuBarIcon"
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
         static let excludedApps = "excludedApps"
+        static let shortcuts = "shortcuts"
     }
 }

@@ -48,9 +48,27 @@ fn english_restore_result(session: &Session, boundary_key: char) -> ImeResult {
     ImeResult::send(backspace, output)
 }
 
-/// End-of-word: optionally restore English Latin text, then reset composition state.
+/// Text expansion (gõ tắt): if the raw keystrokes since the last boundary match a
+/// defined trigger, replace the composed buffer with the expansion. Matched
+/// case-sensitively against `keys`, so `vn` → `Việt Nam` regardless of how Telex/VNI
+/// composed it. `backspace` counts the *displayed* buffer (`á` is one char even if
+/// typed `as`), so we delete exactly what is on screen before injecting.
+fn shortcut_expansion(session: &Session, boundary_key: char) -> Option<ImeResult> {
+    if session.keys.is_empty() {
+        return None;
+    }
+    let expansion = session.shortcuts.get(&session.keys)?;
+    let backspace = session.buffer.chars().count();
+    let output = format!("{expansion}{boundary_key}");
+    Some(ImeResult::send(backspace, output))
+}
+
+/// End-of-word: expand a gõ tắt trigger, else optionally restore English Latin text,
+/// then reset composition state. Text expansion takes priority over English restore.
 pub(crate) fn on_word_boundary(session: &mut Session, boundary_key: char) -> ImeResult {
-    let result = if should_restore(session) {
+    let result = if let Some(expansion) = shortcut_expansion(session, boundary_key) {
+        expansion
+    } else if should_restore(session) {
         english_restore_result(session, boundary_key)
     } else {
         ImeResult::none()
@@ -64,6 +82,7 @@ mod tests {
     use super::*;
     use crate::result::Action;
     use funput_core::{InputMethod, ToneStyle};
+    use std::collections::HashMap;
 
     #[test]
     fn word_boundary_chars() {
@@ -87,6 +106,7 @@ mod tests {
             tone_style: ToneStyle::Traditional,
             smart_restore: true,
             eager_restore: true,
+            shortcuts: HashMap::new(),
         };
         assert!(should_restore(&session));
     }
@@ -101,6 +121,7 @@ mod tests {
             tone_style: ToneStyle::Traditional,
             smart_restore: true,
             eager_restore: true,
+            shortcuts: HashMap::new(),
         };
         assert!(!should_restore(&session));
     }
@@ -115,6 +136,7 @@ mod tests {
             tone_style: ToneStyle::Traditional,
             smart_restore: true,
             eager_restore: true,
+            shortcuts: HashMap::new(),
         };
         assert!(!should_restore(&session));
     }
@@ -136,6 +158,7 @@ mod tests {
             tone_style: ToneStyle::Traditional,
             smart_restore: true,
             eager_restore: true,
+            shortcuts: HashMap::new(),
         };
         assert!(!should_restore(&session));
     }
@@ -151,6 +174,7 @@ mod tests {
             tone_style: ToneStyle::Traditional,
             smart_restore: true,
             eager_restore: true,
+            shortcuts: HashMap::new(),
         };
         assert!(!should_restore(&session));
     }
@@ -165,6 +189,7 @@ mod tests {
             tone_style: ToneStyle::Traditional,
             smart_restore: true,
             eager_restore: true,
+            shortcuts: HashMap::new(),
         };
         let result = on_word_boundary(&mut session, ' ');
         assert_eq!(result.action, Action::Send);
@@ -184,6 +209,7 @@ mod tests {
             tone_style: ToneStyle::Traditional,
             smart_restore: true,
             eager_restore: true,
+            shortcuts: HashMap::new(),
         };
         let result = on_word_boundary(&mut session, ' ');
         assert_eq!(result.action, Action::None);
@@ -201,5 +227,55 @@ mod tests {
         on_word_boundary(&mut session, ' ');
         assert!(session.buffer.is_empty());
         assert!(session.keys.is_empty());
+    }
+
+    #[test]
+    fn shortcut_expands_on_boundary() {
+        // `vn` is not a complete syllable, so it would normally English-restore to
+        // `vn`; the trigger wins and expands to the full text instead.
+        let mut session = Session::new();
+        session.buffer.push_str("vn");
+        session.keys.push_str("vn");
+        session.shortcuts.insert("vn".into(), "Việt Nam".into());
+        let result = on_word_boundary(&mut session, ' ');
+        assert_eq!(result.action, Action::Send);
+        assert_eq!(result.backspace, 2); // deletes the displayed "vn"
+        assert_eq!(result.output, "Việt Nam ");
+        assert!(session.buffer.is_empty());
+        assert!(session.keys.is_empty());
+    }
+
+    #[test]
+    fn shortcut_backspace_counts_displayed_buffer() {
+        // Telex `as` displays `á` (one char) but keys are `as`; deleting must match
+        // what is on screen, so backspace is 1, not 2.
+        let mut session = Session::new();
+        session.buffer.push('á');
+        session.keys.push_str("as");
+        session.shortcuts.insert("as".into(), "address".into());
+        let result = on_word_boundary(&mut session, ' ');
+        assert_eq!(result.backspace, 1);
+        assert_eq!(result.output, "address ");
+    }
+
+    #[test]
+    fn shortcut_is_case_sensitive() {
+        // Only `vn` is defined; typing `VN` must not expand.
+        let mut session = Session::new();
+        session.buffer.push_str("VN");
+        session.keys.push_str("VN");
+        session.shortcuts.insert("vn".into(), "Việt Nam".into());
+        let result = on_word_boundary(&mut session, ' ');
+        assert_eq!(result.action, Action::None);
+    }
+
+    #[test]
+    fn shortcut_keeps_boundary_punctuation() {
+        let mut session = Session::new();
+        session.buffer.push_str("kg");
+        session.keys.push_str("kg");
+        session.shortcuts.insert("kg".into(), "không".into());
+        let result = on_word_boundary(&mut session, ',');
+        assert_eq!(result.output, "không,");
     }
 }

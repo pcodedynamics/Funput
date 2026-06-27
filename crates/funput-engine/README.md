@@ -49,6 +49,12 @@ preedit/marked text…); logic inject không thuộc crate này.
 | `clear()` | Reset buffer + keys (ranh giới từ, đổi focus) |
 | `buffer() -> &str` | Text đang soạn — platform dùng để vẽ preedit/marked text |
 | `keys() -> &str` | Chuỗi phím thô từ ranh giới từ gần nhất — dùng để khôi phục tiếng Anh |
+| `add_shortcut(trigger, expansion)` | Định nghĩa một gõ tắt (`vn` → `Việt Nam`); trigger rỗng bị bỏ qua |
+| `remove_shortcut(&str)` | Xoá một gõ tắt theo trigger |
+| `clear_shortcuts()` | Xoá toàn bộ bảng gõ tắt (clear + add lại = replace-all khi sync config) |
+| `shortcuts() -> &HashMap<String, String>` | Đọc bảng gõ tắt hiện tại |
+
+4 method gõ tắt là thay đổi **additive** lên API E4 (chỉ thêm, không phá vỡ surface cũ).
 
 Re-export: `Action`, `ImeResult` (từ `result.rs`). Đổi breaking cần đồng bộ semver với `funput-ffi`.
 
@@ -106,6 +112,22 @@ việc này ngay khi buffer trở thành dead-end thay vì đợi dấu cách.
 
 Không từ điển: từ tiếng Anh tình cờ là âm tiết VN hợp lệ (`test` → `tét`) sẽ **không** auto-restore
 — đổi lại không bao giờ phá tiếng Việt đang gõ đúng (giống UniKey không từ điển).
+
+## Gõ tắt / Text expansion (macro)
+
+Bảng trigger → expansion do người dùng định nghĩa (`vn` → `Việt Nam`, `kg` → `không`). Tại **ranh
+giới từ**, engine khớp **chuỗi phím thô** (`keys`) — **phân biệt hoa/thường** — với bảng gõ tắt:
+
+- Trúng → `Send`: xoá phần đang hiển thị (`backspace = buffer.chars().count()`), chèn `expansion +
+  phím ranh giới`, rồi `clear()`. Backspace đếm theo buffer hiển thị nên `as` → `á` (1 ký tự) vẫn xoá
+  đúng.
+- Gõ tắt **ưu tiên hơn** khôi phục tiếng Anh và hơn việc giữ buffer đã compose.
+- Chỉ bung ở ranh giới từ (không bung giữa từ), và chỉ khi IME **đang bật** (`process_char` return
+  sớm khi tắt) — gõ tắt là một phần của bộ gõ.
+
+Bảng gõ tắt là **config sống suốt session**: `clear()` (ranh giới từ / đổi focus) không đụng tới nó,
+chỉ `clear_shortcuts()` mới xoá. Engine không đọc/ghi file — platform load từ config rồi gọi
+`add_shortcut`.
 
 ## Cấu trúc module
 

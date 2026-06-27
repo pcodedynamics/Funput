@@ -1,45 +1,21 @@
-// The two Funput windows (Settings + Onboarding) — a macOS-style liquid-glass
-// look. Rust (`windows_ui.rs`) sets the `in`/`in-out` properties and handles the
-// callbacks. Each window draws a base wash + soft colour blobs, then translucent
-// glass panels on top.
+// Entry point compiled by build.rs. Holds the Settings window shell (sidebar nav +
+// content area) and wires each tab to a page component from its own file. The
+// Onboarding window and the shared Backdrop live in their own files too. Rust
+// (`windows_ui.rs`) sets the `in`/`in-out` properties and handles the callbacks.
 
-import { Palette, Button, Switch, ScrollView } from "std-widgets.slint";
-import { Theme, Card, Row, Segmented, KeyCap, Dot, SegOption, AppEntry } from "theme.slint";
+import { Palette, ScrollView } from "std-widgets.slint";
+import { Theme, AppEntry, ShortcutEntry } from "theme.slint";
+import { Backdrop } from "backdrop.slint";
+import { InputPage } from "page_input.slint";
+import { KeyboardPage } from "page_keyboard.slint";
+import { SmartPage } from "page_smart.slint";
+import { ShortcutsPage } from "page_shortcuts.slint";
+import { AppsPage } from "page_apps.slint";
+import { GeneralPage } from "page_general.slint";
+import { AboutPage } from "page_about.slint";
+import { OnboardingWindow } from "onboarding.slint";
 
-export { AppEntry }
-
-// Soft multi-colour field echoing the Funput logo ribbon: a warm coral blob
-// top-left, a magenta-violet blob top-right, and a blue→cyan blob along the
-// bottom — the same warm→cool sweep as the mark. Very soft, low alpha.
-component Backdrop inherits Rectangle {
-    Rectangle {
-        x: -80px;
-        y: -90px;
-        width: 420px;
-        height: 360px;
-        background: Theme.dark
-            ? @radial-gradient(circle, #ff6b8042 0%, #ff6b8000 70%)
-            : @radial-gradient(circle, #ff5c7352 0%, #ff5c7300 70%);
-    }
-    Rectangle {
-        x: parent.width - 320px;
-        y: -110px;
-        width: 420px;
-        height: 380px;
-        background: Theme.dark
-            ? @radial-gradient(circle, #cf3ff03a 0%, #cf3ff000 70%)
-            : @radial-gradient(circle, #cf2ff04a 0%, #cf2ff000 70%);
-    }
-    Rectangle {
-        x: parent.width - 380px;
-        y: parent.height - 280px;
-        width: 460px;
-        height: 400px;
-        background: Theme.dark
-            ? @radial-gradient(circle, #2aa6f53d 0%, #2aa6f500 70%)
-            : @radial-gradient(circle, #1fa6f54d 0%, #1fa6f500 70%);
-    }
-}
+export { AppEntry, ShortcutEntry, OnboardingWindow }
 
 export component SettingsWindow inherits Window {
     title: "Funput — Cài đặt";
@@ -58,6 +34,7 @@ export component SettingsWindow inherits Window {
     in-out property <bool> launch-at-login;
     in property <[AppEntry]> excluded-apps;
     in property <[AppEntry]> recent-apps;
+    in property <[ShortcutEntry]> shortcuts;
     in property <string> version;
     // Auto-update: idle | checking | uptodate | available | downloading | ready | error
     in property <string> update-state: "idle";
@@ -73,6 +50,10 @@ export component SettingsWindow inherits Window {
     callback set-launch(bool);
     callback add-app(string);
     callback remove-app(string);
+    callback add-shortcut();
+    callback remove-shortcut(int);
+    callback edit-trigger(int, string);
+    callback edit-expansion(int, string);
     callback open-link(string);
     callback check-update();
     callback install-update();
@@ -84,6 +65,7 @@ export component SettingsWindow inherits Window {
         { id: "input", label: "Kiểu gõ", icon: @image-url("icons/keyboard.svg") },
         { id: "keyboard", label: "Phím chuyển", icon: @image-url("icons/switch.svg") },
         { id: "smart", label: "Thông minh", icon: @image-url("icons/sparkles.svg") },
+        { id: "shortcuts", label: "Gõ tắt", icon: @image-url("icons/shortcut.svg") },
         { id: "apps", label: "Ứng dụng", icon: @image-url("icons/apps.svg") },
         { id: "general", label: "Chung", icon: @image-url("icons/settings.svg") },
         { id: "about", label: "Giới thiệu", icon: @image-url("icons/info.svg") },
@@ -149,399 +131,62 @@ export component SettingsWindow inherits Window {
             }
         }
 
-        // ---- Content ----
+        // ---- Content: one page component per tab ----
         ScrollView {
             VerticalLayout {
                 padding: Theme.sp-xl;
                 spacing: Theme.sp-md;
                 alignment: start;
 
-                // ===== Kiểu gõ =====
-                if root.active == "input": VerticalLayout {
-                    spacing: Theme.sp-md;
-                    Text { text: "Kiểu gõ"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
-                    Card {
-                        Row {
-                            title: "Phương thức";
-                            subtitle: root.method == "telex"
-                                ? "Dấu bằng chữ cái — aa→â, ow→ơ, as→á, dd→đ"
-                                : "Dấu bằng chữ số — a6→â, o7→ơ, a1→á, d9→đ";
-                            Segmented {
-                                options: [{ id: "telex", label: "Telex" }, { id: "vni", label: "VNI" }];
-                                current: root.method;
-                                changed(v) => { root.pick-method(v); }
-                            }
-                        }
-                    }
-                    Card {
-                        Row {
-                            title: "Kiểu đặt dấu";
-                            subtitle: root.tone-style == "modern"
-                                ? "Dấu kiểu mới — hoà, khoẻ, thuý"
-                                : "Dấu kiểu cũ — hòa, khỏe, thúy";
-                            Segmented {
-                                options: [{ id: "traditional", label: "Truyền thống" }, { id: "modern", label: "Hiện đại" }];
-                                current: root.tone-style;
-                                changed(v) => { root.pick-tone(v); }
-                            }
-                        }
-                    }
+                if root.active == "input": InputPage {
+                    method: root.method;
+                    tone-style: root.tone-style;
+                    pick-method(v) => { root.pick-method(v); }
+                    pick-tone(v) => { root.pick-tone(v); }
                 }
 
-                // ===== Phím chuyển =====
-                if root.active == "keyboard": VerticalLayout {
-                    spacing: Theme.sp-md;
-                    Text { text: "Phím chuyển VI / EN"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
-                    Card {
-                        Row {
-                            title: "Phím tắt";
-                            subtitle: "Bật/tắt gõ tiếng Việt nhanh.";
-                            Segmented {
-                                options: [
-                                    { id: "ctrl_backtick", label: "Ctrl `" },
-                                    { id: "ctrl_space", label: "Ctrl Space" },
-                                    { id: "alt_shift", label: "Alt Shift" },
-                                ];
-                                current: root.hotkey;
-                                changed(v) => { root.pick-hotkey(v); }
-                            }
-                        }
-                        Rectangle { height: 1px; background: Palette.border; }
-                        Row {
-                            title: "Đang dùng";
-                            HorizontalLayout {
-                                spacing: Theme.sp-xs;
-                                for cap in root.hotkey-caps: KeyCap { label: cap; }
-                            }
-                        }
-                    }
+                if root.active == "keyboard": KeyboardPage {
+                    hotkey: root.hotkey;
+                    hotkey-caps: root.hotkey-caps;
+                    pick-hotkey(v) => { root.pick-hotkey(v); }
                 }
 
-                // ===== Thông minh =====
-                if root.active == "smart": VerticalLayout {
-                    spacing: Theme.sp-md;
-                    Text { text: "Gõ thông minh"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
-                    Card {
-                        Row {
-                            title: "Tự khôi phục tiếng Anh";
-                            subtitle: "Từ không phải tiếng Việt giữ nguyên chữ gốc (card → card, không thành cảd).";
-                            Switch {
-                                checked <=> root.smart-restore;
-                                toggled => { root.set-smart(self.checked); }
-                            }
-                        }
-                        Rectangle { height: 1px; background: Palette.border; }
-                        Row {
-                            title: "Khôi phục tức thì";
-                            subtitle: "Đổi lại ngay khi từ không thể là tiếng Việt, không chờ dấu cách.";
-                            Switch {
-                                checked <=> root.eager-restore;
-                                enabled: root.smart-restore;
-                                toggled => { root.set-eager(self.checked); }
-                            }
-                        }
-                    }
-                    Card {
-                        VerticalLayout {
-                            spacing: Theme.sp-xs;
-                            Text { text: "Ví dụ"; font-size: 13px; font-weight: 600; color: Theme.subtle; }
-                            Text { text: "text → text (giữ tiếng Anh)"; font-size: 13px; color: Palette.foreground; }
-                            Text { text: "tieesng → tiếng (gõ tiếng Việt)"; font-size: 13px; color: Palette.foreground; }
-                        }
-                    }
+                if root.active == "smart": SmartPage {
+                    smart-restore <=> root.smart-restore;
+                    eager-restore <=> root.eager-restore;
+                    set-smart(v) => { root.set-smart(v); }
+                    set-eager(v) => { root.set-eager(v); }
                 }
 
-                // ===== Ứng dụng =====
-                if root.active == "apps": VerticalLayout {
-                    spacing: Theme.sp-md;
-                    Text { text: "Ứng dụng bỏ qua"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
-                    Card {
-                        VerticalLayout {
-                            spacing: Theme.sp-sm;
-                            Text {
-                                text: "Mặc định tiếng Anh khi vào các app này — vẫn bật lại tiếng Việt bằng phím tắt.";
-                                font-size: 13px;
-                                font-weight: 600;
-                                color: Theme.subtle;
-                                wrap: word-wrap;
-                            }
-                            if root.excluded-apps.length == 0: Text {
-                                text: "Chưa có app nào. Thêm từ danh sách bên dưới.";
-                                font-size: 13px;
-                                color: Theme.subtle;
-                            }
-                            for app in root.excluded-apps: HorizontalLayout {
-                                spacing: Theme.sp-md;
-                                VerticalLayout {
-                                    horizontal-stretch: 1;
-                                    alignment: center;
-                                    Text { text: app.name; font-size: 14px; color: Palette.foreground; }
-                                    Text { text: app.id; font-size: 12px; color: Theme.subtle; }
-                                }
-                                Button {
-                                    text: "Xóa";
-                                    clicked => { root.remove-app(app.id); }
-                                }
-                            }
-                        }
-                    }
-                    Card {
-                        VerticalLayout {
-                            spacing: Theme.sp-sm;
-                            Text { text: "App gần đây"; font-size: 13px; font-weight: 600; color: Theme.subtle; }
-                            if root.recent-apps.length == 0: Text {
-                                text: "Chuyển qua lại các app một lúc để chúng hiện ở đây.";
-                                font-size: 13px;
-                                color: Theme.subtle;
-                            }
-                            for app in root.recent-apps: HorizontalLayout {
-                                spacing: Theme.sp-md;
-                                VerticalLayout {
-                                    horizontal-stretch: 1;
-                                    alignment: center;
-                                    Text { text: app.name; font-size: 14px; color: Palette.foreground; }
-                                    Text { text: app.id; font-size: 12px; color: Theme.subtle; }
-                                }
-                                Button {
-                                    text: "Thêm";
-                                    primary: true;
-                                    clicked => { root.add-app(app.id); }
-                                }
-                            }
-                        }
-                    }
+                if root.active == "shortcuts": ShortcutsPage {
+                    shortcuts: root.shortcuts;
+                    add-shortcut() => { root.add-shortcut(); }
+                    remove-shortcut(i) => { root.remove-shortcut(i); }
+                    edit-trigger(i, t) => { root.edit-trigger(i, t); }
+                    edit-expansion(i, t) => { root.edit-expansion(i, t); }
                 }
 
-                // ===== Chung =====
-                if root.active == "general": VerticalLayout {
-                    spacing: Theme.sp-md;
-                    Text { text: "Chung"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
-                    Card {
-                        Row {
-                            title: "Khởi động cùng Windows";
-                            subtitle: "Tự chạy Funput mỗi khi đăng nhập.";
-                            Switch {
-                                checked <=> root.launch-at-login;
-                                toggled => { root.set-launch(self.checked); }
-                            }
-                        }
-                    }
+                if root.active == "apps": AppsPage {
+                    excluded-apps: root.excluded-apps;
+                    recent-apps: root.recent-apps;
+                    add-app(id) => { root.add-app(id); }
+                    remove-app(id) => { root.remove-app(id); }
                 }
 
-                // ===== Giới thiệu =====
-                if root.active == "about": VerticalLayout {
-                    spacing: Theme.sp-md;
-                    Text { text: "Giới thiệu"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
-                    Card {
-                        VerticalLayout {
-                            spacing: Theme.sp-sm;
-                            HorizontalLayout {
-                                alignment: center;
-                                Image {
-                                    source: @image-url("../../../assets/logo.png");
-                                    width: 72px;
-                                    height: 72px;
-                                }
-                            }
-                            Text { text: "Funput"; font-size: 18px; font-weight: 700; horizontal-alignment: center; color: Palette.foreground; }
-                            Text { text: "Bộ gõ tiếng Việt — miễn phí, mã nguồn mở."; font-size: 13px; horizontal-alignment: center; color: Theme.subtle; }
-                            Text { text: "Phiên bản \{root.version}"; font-size: 12px; horizontal-alignment: center; color: Theme.subtle; }
-
-                            // --- Cập nhật ---
-                            if root.update-state != "idle": Text {
-                                text: root.update-state == "checking" ? "Đang kiểm tra…"
-                                    : root.update-state == "uptodate" ? "Bạn đang dùng bản mới nhất."
-                                    : root.update-state == "available" ? "Có bản mới \{root.update-version}."
-                                    : root.update-state == "downloading" ? "Đang tải bản cập nhật…"
-                                    : root.update-state == "ready" ? "Đã cập nhật Funput. Khởi động lại để áp dụng."
-                                    : root.update-message;
-                                font-size: 12px;
-                                horizontal-alignment: center;
-                                wrap: word-wrap;
-                                color: root.update-state == "error" ? #e5484d : Theme.subtle;
-                            }
-                            HorizontalLayout {
-                                alignment: center;
-                                spacing: Theme.sp-sm;
-                                // Re-checkable from idle / up-to-date / error.
-                                if root.update-state != "available" && root.update-state != "downloading" && root.update-state != "ready": Button {
-                                    text: "Kiểm tra cập nhật…";
-                                    enabled: root.update-state != "checking";
-                                    clicked => { root.check-update(); }
-                                }
-                                if root.update-state == "available" || root.update-state == "downloading": Button {
-                                    text: "Tải và cài đặt";
-                                    enabled: root.update-state != "downloading";
-                                    clicked => { root.install-update(); }
-                                }
-                                if root.update-state == "available": Button {
-                                    text: "Xem thay đổi";
-                                    clicked => { root.open-link("https://github.com/Funput/Funput/releases/latest"); }
-                                }
-                                if root.update-state == "ready": Button {
-                                    text: "Khởi động lại";
-                                    clicked => { root.relaunch-now(); }
-                                }
-                            }
-                            HorizontalLayout {
-                                alignment: center;
-                                spacing: Theme.sp-sm;
-                                Button { text: "GitHub"; clicked => { root.open-link("https://github.com/Funput/Funput"); } }
-                                Button { text: "Website"; clicked => { root.open-link("https://funput.app/"); } }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-export component OnboardingWindow inherits Window {
-    title: "Chào mừng đến Funput";
-    icon: @image-url("../../../assets/logo.png");
-    width: 460px;
-    height: 540px;
-    background: Theme.window-base;
-
-    in property <string> method;
-    in-out property <bool> launch-at-login;
-    in-out property <int> step: 0;
-
-    callback pick-method(string);
-    callback set-launch(bool);
-    callback finish();
-
-    Backdrop { }
-
-    VerticalLayout {
-        padding: Theme.sp-xl;
-        alignment: center;
-        Card {
-            VerticalLayout {
-                spacing: Theme.sp-lg;
-
-                // ---- step content ----
-                VerticalLayout {
-                    min-height: 240px;
-                    alignment: center;
-                    spacing: Theme.sp-sm;
-
-                    if root.step == 0: VerticalLayout {
-                        alignment: center;
-                        spacing: Theme.sp-sm;
-                        HorizontalLayout {
-                            alignment: center;
-                            Image { source: @image-url("../../../assets/logo.png"); width: 60px; height: 60px; }
-                        }
-                        Text { text: "Chào mừng đến Funput"; font-size: 20px; font-weight: 700; horizontal-alignment: center; color: Palette.foreground; }
-                        Text {
-                            text: "Gõ tiếng Việt ở mọi nơi trên Windows — miễn phí, mã nguồn mở.";
-                            font-size: 14px;
-                            horizontal-alignment: center;
-                            wrap: word-wrap;
-                            color: Theme.subtle;
-                        }
-                    }
-
-                    if root.step == 1: VerticalLayout {
-                        alignment: center;
-                        spacing: Theme.sp-sm;
-                        HorizontalLayout {
-                            alignment: center;
-                            Image { source: @image-url("icons/keyboard.svg"); colorize: Theme.accent; width: 42px; height: 42px; }
-                        }
-                        Text { text: "Chọn kiểu gõ"; font-size: 20px; font-weight: 700; horizontal-alignment: center; color: Palette.foreground; }
-                        Text { text: "Có thể đổi bất cứ lúc nào trong Cài đặt."; font-size: 14px; horizontal-alignment: center; color: Theme.subtle; }
-                        HorizontalLayout {
-                            alignment: center;
-                            Segmented {
-                                options: [{ id: "telex", label: "Telex" }, { id: "vni", label: "VNI" }];
-                                current: root.method;
-                                changed(v) => { root.pick-method(v); }
-                            }
-                        }
-                    }
-
-                    if root.step == 2: VerticalLayout {
-                        alignment: center;
-                        spacing: Theme.sp-sm;
-                        HorizontalLayout {
-                            alignment: center;
-                            Image { source: @image-url("icons/bell.svg"); colorize: Theme.accent; width: 42px; height: 42px; }
-                        }
-                        Text { text: "Cách hoạt động"; font-size: 20px; font-weight: 700; horizontal-alignment: center; color: Palette.foreground; }
-                        Text {
-                            text: "Funput chạy nền ở khay hệ thống (icon FU).";
-                            font-size: 14px;
-                            horizontal-alignment: center;
-                            wrap: word-wrap;
-                            color: Theme.subtle;
-                        }
-                        HorizontalLayout {
-                            alignment: center;
-                            spacing: Theme.sp-xs;
-                            Text { text: "Nhấn"; vertical-alignment: center; font-size: 14px; color: Theme.subtle; }
-                            KeyCap { label: "Ctrl"; }
-                            KeyCap { label: "`"; }
-                            Text { text: "để bật/tắt nhanh."; vertical-alignment: center; font-size: 14px; color: Theme.subtle; }
-                        }
-                        Text {
-                            text: "Lưu ý: không gõ được vào ứng dụng chạy quyền Administrator.";
-                            font-size: 12px;
-                            horizontal-alignment: center;
-                            wrap: word-wrap;
-                            color: Theme.faint;
-                        }
-                    }
-
-                    if root.step == 3: VerticalLayout {
-                        alignment: center;
-                        spacing: Theme.sp-sm;
-                        HorizontalLayout {
-                            alignment: center;
-                            Image { source: @image-url("icons/check.svg"); colorize: Theme.accent; width: 42px; height: 42px; }
-                        }
-                        Text { text: "Sẵn sàng!"; font-size: 20px; font-weight: 700; horizontal-alignment: center; color: Palette.foreground; }
-                        Text { text: "Bật tự khởi động để Funput luôn có mặt khi bạn cần."; font-size: 14px; horizontal-alignment: center; wrap: word-wrap; color: Theme.subtle; }
-                        HorizontalLayout {
-                            alignment: center;
-                            spacing: Theme.sp-md;
-                            Text { text: "Khởi động cùng Windows"; vertical-alignment: center; color: Palette.foreground; }
-                            Switch {
-                                checked <=> root.launch-at-login;
-                                toggled => { root.set-launch(self.checked); }
-                            }
-                        }
-                    }
+                if root.active == "general": GeneralPage {
+                    launch-at-login <=> root.launch-at-login;
+                    set-launch(v) => { root.set-launch(v); }
                 }
 
-                // ---- nav ----
-                HorizontalLayout {
-                    spacing: Theme.sp-md;
-                    if root.step > 0: Button {
-                        text: "Quay lại";
-                        clicked => { root.step -= 1; }
-                    }
-                    Rectangle {
-                        horizontal-stretch: 1;
-                        HorizontalLayout {
-                            alignment: center;
-                            spacing: 6px;
-                            for i in [0, 1, 2, 3]: Dot { on: i == root.step; }
-                        }
-                    }
-                    Button {
-                        text: root.step < 3 ? "Tiếp tục" : "Bắt đầu";
-                        primary: true;
-                        clicked => {
-                            if (root.step < 3) {
-                                root.step += 1;
-                            } else {
-                                root.finish();
-                            }
-                        }
-                    }
+                if root.active == "about": AboutPage {
+                    version: root.version;
+                    update-state: root.update-state;
+                    update-version: root.update-version;
+                    update-message: root.update-message;
+                    open-link(url) => { root.open-link(url); }
+                    check-update() => { root.check-update(); }
+                    install-update() => { root.install-update(); }
+                    relaunch-now() => { root.relaunch-now(); }
                 }
             }
         }

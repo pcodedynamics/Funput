@@ -1,0 +1,70 @@
+// Settings → "Ứng dụng bỏ qua": apps that default to English on focus, plus a
+// "recent apps" picker to add from.
+
+import { Palette, Button } from "std-widgets.slint";
+import { Theme, Card, AppEntry } from "theme.slint";
+
+export component AppsPage inherits VerticalLayout {
+    in property <[AppEntry]> excluded-apps;
+    in property <[AppEntry]> recent-apps;
+    callback add-app(string);
+    callback remove-app(string);
+
+    spacing: Theme.sp-md;
+    Text { text: "Ứng dụng bỏ qua"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
+    Card {
+        VerticalLayout {
+            spacing: Theme.sp-sm;
+            Text {
+                text: "Mặc định tiếng Anh khi vào các app này — vẫn bật lại tiếng Việt bằng phím tắt.";
+                font-size: 13px;
+                font-weight: 600;
+                color: Theme.subtle;
+                wrap: word-wrap;
+            }
+            if root.excluded-apps.length == 0: Text {
+                text: "Chưa có app nào. Thêm từ danh sách bên dưới.";
+                font-size: 13px;
+                color: Theme.subtle;
+            }
+            for app in root.excluded-apps: HorizontalLayout {
+                spacing: Theme.sp-md;
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    alignment: center;
+                    Text { text: app.name; font-size: 14px; color: Palette.foreground; }
+                    Text { text: app.id; font-size: 12px; color: Theme.subtle; }
+                }
+                Button {
+                    text: "Xóa";
+                    clicked => { root.remove-app(app.id); }
+                }
+            }
+        }
+    }
+    Card {
+        VerticalLayout {
+            spacing: Theme.sp-sm;
+            Text { text: "App gần đây"; font-size: 13px; font-weight: 600; color: Theme.subtle; }
+            if root.recent-apps.length == 0: Text {
+                text: "Chuyển qua lại các app một lúc để chúng hiện ở đây.";
+                font-size: 13px;
+                color: Theme.subtle;
+            }
+            for app in root.recent-apps: HorizontalLayout {
+                spacing: Theme.sp-md;
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    alignment: center;
+                    Text { text: app.name; font-size: 14px; color: Palette.foreground; }
+                    Text { text: app.id; font-size: 12px; color: Theme.subtle; }
+                }
+                Button {
+                    text: "Thêm";
+                    primary: true;
+                    clicked => { root.add-app(app.id); }
+                }
+            }
+        }
+    }
+}

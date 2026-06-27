@@ -40,6 +40,24 @@ pub fn remove_excluded_app(id: &str) {
     shell::remove_excluded_app(id);
 }
 
+// --- Shortcuts (gõ tắt) -----------------------------------------------------
+
+pub fn add_shortcut() {
+    shell::add_shortcut();
+}
+
+pub fn remove_shortcut(index: usize) {
+    shell::remove_shortcut(index);
+}
+
+pub fn set_shortcut_trigger(index: usize, trigger: String) {
+    shell::set_shortcut_trigger(index, trigger);
+}
+
+pub fn set_shortcut_expansion(index: usize, expansion: String) {
+    shell::set_shortcut_expansion(index, expansion);
+}
+
 /// Persist the launch-at-login preference and mirror it into the OS autostart
 /// (HKCU `…\Run`) via `auto-launch`.
 pub fn set_launch_at_login(on: bool) {

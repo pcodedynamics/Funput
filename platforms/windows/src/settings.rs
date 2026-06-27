@@ -126,6 +126,15 @@ pub struct ExcludedApp {
     pub name: String,
 }
 
+/// A text-expansion shortcut (gõ tắt): typing `trigger` then a word boundary expands
+/// to `expansion` (`vn` → `Việt Nam`). Same schema as the Linux build's `Shortcut`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Shortcut {
+    pub trigger: String,
+    pub expansion: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Settings {
@@ -143,6 +152,10 @@ pub struct Settings {
     /// settings files (without this key) loadable instead of resetting to defaults.
     #[serde(default)]
     pub excluded_apps: Vec<ExcludedApp>,
+    /// Text-expansion shortcuts (gõ tắt). `#[serde(default)]` keeps older settings
+    /// files (without this key) loadable.
+    #[serde(default)]
+    pub shortcuts: Vec<Shortcut>,
 }
 
 impl Default for Settings {
@@ -157,6 +170,7 @@ impl Default for Settings {
             launch_at_login: false,
             has_completed_onboarding: false,
             excluded_apps: Vec::new(),
+            shortcuts: Vec::new(),
         }
     }
 }

@@ -9,7 +9,7 @@ use std::sync::{Mutex, OnceLock};
 use funput_core::{InputMethod, ToneStyle as CoreToneStyle};
 use funput_engine::{Engine, ImeResult};
 
-use crate::settings::{ExcludedApp, Hotkey, Method, Settings, ToneStyle};
+use crate::settings::{ExcludedApp, Hotkey, Method, Settings, Shortcut, ToneStyle};
 
 /// Tag stamped into `dwExtraInfo` of every event we synthesize via `SendInput`, so
 /// the hook can recognize and ignore its own injected keystrokes (no re-entrancy).
@@ -43,7 +43,17 @@ fn apply_to_engine(engine: &mut Engine, s: &Settings) {
     engine.set_enabled(s.enabled);
     engine.set_smart_restore(s.smart_restore);
     engine.set_eager_restore(s.eager_restore);
+    push_shortcuts(engine, &s.shortcuts);
     engine.clear();
+}
+
+/// Replace the engine's gõ tắt table with `shortcuts` (empty triggers are skipped by
+/// the engine). The whole table is re-pushed after any edit — it's small and cheap.
+fn push_shortcuts(engine: &mut Engine, shortcuts: &[Shortcut]) {
+    engine.clear_shortcuts();
+    for sc in shortcuts {
+        engine.add_shortcut(sc.trigger.clone(), sc.expansion.clone());
+    }
 }
 
 fn shell() -> &'static Mutex<Shell> {
@@ -86,6 +96,9 @@ pub fn excluded_apps() -> Vec<ExcludedApp> {
 }
 pub fn recent_apps() -> Vec<ExcludedApp> {
     with(|s| s.recent.clone())
+}
+pub fn shortcuts() -> Vec<Shortcut> {
+    with(|s| s.settings.shortcuts.clone())
 }
 pub fn enabled() -> bool {
     with(|s| s.settings.enabled)
@@ -226,6 +239,51 @@ pub fn remove_excluded_app(id: &str) {
         s.settings.excluded_apps.retain(|a| a.id != id);
         if s.settings.excluded_apps.len() != before {
             s.settings.save();
+        }
+    });
+}
+
+// --- shortcuts (gõ tắt) -----------------------------------------------------
+
+/// Persist `shortcuts` and re-push the table to the live engine.
+fn commit_shortcuts(s: &mut Shell) {
+    push_shortcuts(&mut s.engine, &s.settings.shortcuts);
+    s.settings.save();
+}
+
+pub fn add_shortcut() {
+    with(|s| {
+        s.settings.shortcuts.push(Shortcut {
+            trigger: String::new(),
+            expansion: String::new(),
+        });
+        commit_shortcuts(s);
+    });
+}
+
+pub fn remove_shortcut(index: usize) {
+    with(|s| {
+        if index < s.settings.shortcuts.len() {
+            s.settings.shortcuts.remove(index);
+            commit_shortcuts(s);
+        }
+    });
+}
+
+pub fn set_shortcut_trigger(index: usize, trigger: String) {
+    with(|s| {
+        if let Some(sc) = s.settings.shortcuts.get_mut(index) {
+            sc.trigger = trigger;
+            commit_shortcuts(s);
+        }
+    });
+}
+
+pub fn set_shortcut_expansion(index: usize, expansion: String) {
+    with(|s| {
+        if let Some(sc) = s.settings.shortcuts.get_mut(index) {
+            sc.expansion = expansion;
+            commit_shortcuts(s);
         }
     });
 }

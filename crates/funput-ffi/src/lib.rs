@@ -182,6 +182,61 @@ pub unsafe extern "C" fn funput_buffer(
     count
 }
 
+/// Define a text-expansion shortcut (gõ tắt): typing `trigger` then a word boundary
+/// injects `expansion` (`vn` → `Việt Nam`). Both strings are passed as UTF-32
+/// (`*const u32` + length), matching [`funput_buffer`]. An empty trigger is ignored
+/// by the engine; re-adding a trigger overwrites it.
+///
+/// Hosts sync the whole table by calling [`funput_clear_shortcuts`] then adding each
+/// entry (the engine is a runtime mirror of the host's config).
+///
+/// Null-safe: a null handle does nothing. A null `trigger`/`expansion` pointer is
+/// treated as an empty string.
+///
+/// # Safety
+/// `engine` must be a valid handle or null. `trigger` must point to at least
+/// `trigger_len` `u32` values (or be null), and `expansion` to at least
+/// `expansion_len` `u32` values (or be null).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn funput_add_shortcut(
+    engine: *mut FunputEngine,
+    trigger: *const u32,
+    trigger_len: usize,
+    expansion: *const u32,
+    expansion_len: usize,
+) {
+    if let Some(engine) = unsafe { engine.as_mut() } {
+        let trigger = unsafe { string_from_utf32(trigger, trigger_len) };
+        let expansion = unsafe { string_from_utf32(expansion, expansion_len) };
+        engine.inner.add_shortcut(trigger, expansion);
+    }
+}
+
+/// Remove every text-expansion shortcut. Combine with [`funput_add_shortcut`] to
+/// replace the whole table when syncing from config.
+///
+/// # Safety
+/// `engine` must be a valid handle or null.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn funput_clear_shortcuts(engine: *mut FunputEngine) {
+    if let Some(engine) = unsafe { engine.as_mut() } {
+        engine.inner.clear_shortcuts();
+    }
+}
+
+/// Decode `len` UTF-32 codepoints at `ptr` into a `String`, skipping invalid
+/// scalars. A null pointer yields an empty string.
+///
+/// # Safety
+/// `ptr` must point to at least `len` `u32` values, or be null.
+unsafe fn string_from_utf32(ptr: *const u32, len: usize) -> String {
+    if ptr.is_null() {
+        return String::new();
+    }
+    let slice = unsafe { std::slice::from_raw_parts(ptr, len) };
+    slice.iter().filter_map(|&c| char::from_u32(c)).collect()
+}
+
 /// Backspace inside the current composition: drop the last composed character so
 /// the next keystroke composes against the corrected text (`Phua` ⌫ `s` → `Phú`).
 ///

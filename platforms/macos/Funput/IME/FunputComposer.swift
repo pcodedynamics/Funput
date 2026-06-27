@@ -43,6 +43,20 @@ final class FunputComposer {
         funput_clear(handle)
     }
 
+    /// Remove every text-expansion shortcut (gõ tắt). Pair with `addShortcut` to
+    /// replace the whole table when syncing from `AppSettings`.
+    func clearShortcuts() {
+        funput_clear_shortcuts(handle)
+    }
+
+    /// Define a text-expansion shortcut: typing `trigger` then a word boundary injects
+    /// `expansion` (`vn` → `Việt Nam`). Both strings cross the C ABI as UTF-32.
+    func addShortcut(trigger: String, expansion: String) {
+        let t = trigger.unicodeScalars.map(\.value)
+        let e = expansion.unicodeScalars.map(\.value)
+        funput_add_shortcut(handle, t, UInt(t.count), e, UInt(e.count))
+    }
+
     /// The composed syllable buffer — the text shown as marked (underlined) text.
     func buffer() -> String {
         var out = [UInt32](repeating: 0, count: Int(CHARS_CAP))

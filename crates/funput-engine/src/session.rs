@@ -1,5 +1,7 @@
 //! IME session state — enabled flag, input method, composition buffer.
 
+use std::collections::HashMap;
+
 use funput_core::{InputMethod, ToneStyle};
 
 /// Mutable session held by [`crate::Engine`]. Internal — not part of the public API.
@@ -21,6 +23,10 @@ pub(crate) struct Session {
     /// Restore the instant a word becomes a dead end, without waiting for a word
     /// boundary. Only meaningful while `smart_restore` is on.
     pub(crate) eager_restore: bool,
+    /// Text-expansion table (gõ tắt): raw-keystroke trigger → expansion. Matched
+    /// case-sensitively against `keys` at a word boundary, before English restore.
+    /// Config that lives for the whole session — `clear()` does not touch it.
+    pub(crate) shortcuts: HashMap<String, String>,
 }
 
 impl Session {
@@ -33,6 +39,7 @@ impl Session {
             keys: String::new(),
             smart_restore: true,
             eager_restore: true,
+            shortcuts: HashMap::new(),
         }
     }
 
@@ -59,6 +66,7 @@ mod tests {
         assert_eq!(session.method, InputMethod::Telex);
         assert!(session.buffer.is_empty());
         assert!(session.keys.is_empty());
+        assert!(session.shortcuts.is_empty());
     }
 
     #[test]
@@ -69,5 +77,15 @@ mod tests {
         session.clear();
         assert!(session.buffer.is_empty());
         assert!(session.keys.is_empty());
+    }
+
+    #[test]
+    fn clear_keeps_shortcuts() {
+        // Shortcuts are session-wide config, not per-word state.
+        let mut session = Session::new();
+        session.shortcuts.insert("vn".into(), "Việt Nam".into());
+        session.buffer.push('á');
+        session.clear();
+        assert_eq!(session.shortcuts.get("vn").map(String::as_str), Some("Việt Nam"));
     }
 }

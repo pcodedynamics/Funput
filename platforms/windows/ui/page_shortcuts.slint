@@ -1,0 +1,82 @@
+// Settings → "Gõ tắt": manage text-expansion shortcuts (`vn` → `Việt Nam`).
+// Editing a field only persists; the model is not rebuilt, so the LineEdit keeps
+// its caret. Add/remove rebuild the list (see windows_ui.rs).
+
+import { Palette, Button, LineEdit } from "std-widgets.slint";
+import { Theme, Card, ShortcutEntry } from "theme.slint";
+
+export component ShortcutsPage inherits VerticalLayout {
+    in property <[ShortcutEntry]> shortcuts;
+    callback add-shortcut();
+    callback remove-shortcut(int);
+    callback edit-trigger(int, string);
+    callback edit-expansion(int, string);
+
+    spacing: Theme.sp-md;
+    Text { text: "Gõ tắt"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
+    Card {
+        HorizontalLayout {
+            spacing: Theme.sp-md;
+            VerticalLayout {
+                horizontal-stretch: 1;
+                alignment: center;
+                Text {
+                    text: "Gõ chữ tắt rồi dấu cách để bung — ví dụ vn → Việt Nam.";
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: Theme.subtle;
+                    wrap: word-wrap;
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                Button {
+                    text: "Thêm";
+                    primary: true;
+                    clicked => { root.add-shortcut(); }
+                }
+            }
+        }
+        if root.shortcuts.length == 0: Text {
+            text: "Chưa có gõ tắt nào. Bấm “Thêm” để tạo — ví dụ vn → Việt Nam, kg → không.";
+            font-size: 13px;
+            color: Theme.subtle;
+            wrap: word-wrap;
+        }
+        for entry[i] in root.shortcuts: HorizontalLayout {
+            spacing: Theme.sp-sm;
+            LineEdit {
+                width: 120px;
+                placeholder-text: "vn";
+                text: entry.trigger;
+                edited(t) => { root.edit-trigger(i, t); }
+            }
+            VerticalLayout {
+                alignment: center;
+                Text { text: "→"; font-size: 14px; color: Theme.subtle; }
+            }
+            LineEdit {
+                horizontal-stretch: 1;
+                placeholder-text: "Việt Nam";
+                text: entry.expansion;
+                edited(t) => { root.edit-expansion(i, t); }
+            }
+            Button {
+                text: "Xóa";
+                clicked => { root.remove-shortcut(i); }
+            }
+        }
+    }
+    Card {
+        VerticalLayout {
+            spacing: Theme.sp-xs;
+            Text { text: "Mẹo"; font-size: 13px; font-weight: 600; color: Theme.subtle; }
+            Text {
+                text: "Trigger khớp đúng chuỗi phím và phân biệt hoa/thường (vn ≠ VN). Gõ tắt được ưu tiên hơn tự khôi phục tiếng Anh.";
+                font-size: 13px;
+                color: Palette.foreground;
+                wrap: word-wrap;
+            }
+        }
+    }
+}

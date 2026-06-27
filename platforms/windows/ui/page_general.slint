@@ -1,0 +1,22 @@
+// Settings → "Chung": general preferences (launch at login).
+
+import { Palette, Switch } from "std-widgets.slint";
+import { Theme, Card, Row } from "theme.slint";
+
+export component GeneralPage inherits VerticalLayout {
+    in-out property <bool> launch-at-login;
+    callback set-launch(bool);
+
+    spacing: Theme.sp-md;
+    Text { text: "Chung"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
+    Card {
+        Row {
+            title: "Khởi động cùng Windows";
+            subtitle: "Tự chạy Funput mỗi khi đăng nhập.";
+            Switch {
+                checked <=> root.launch-at-login;
+                toggled => { root.set-launch(self.checked); }
+            }
+        }
+    }
+}

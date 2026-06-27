@@ -1,0 +1,157 @@
+// The first-run Onboarding window: a 4-step wizard over the shared glass backdrop.
+// Rust (`windows_ui.rs`) sets the properties and handles the callbacks.
+
+import { Palette, Button, Switch } from "std-widgets.slint";
+import { Theme, Card, Segmented, KeyCap, Dot } from "theme.slint";
+import { Backdrop } from "backdrop.slint";
+
+export component OnboardingWindow inherits Window {
+    title: "Chào mừng đến Funput";
+    icon: @image-url("../../../assets/logo.png");
+    width: 460px;
+    height: 540px;
+    background: Theme.window-base;
+
+    in property <string> method;
+    in-out property <bool> launch-at-login;
+    in-out property <int> step: 0;
+
+    callback pick-method(string);
+    callback set-launch(bool);
+    callback finish();
+
+    Backdrop { }
+
+    VerticalLayout {
+        padding: Theme.sp-xl;
+        alignment: center;
+        Card {
+            VerticalLayout {
+                spacing: Theme.sp-lg;
+
+                // ---- step content ----
+                VerticalLayout {
+                    min-height: 240px;
+                    alignment: center;
+                    spacing: Theme.sp-sm;
+
+                    if root.step == 0: VerticalLayout {
+                        alignment: center;
+                        spacing: Theme.sp-sm;
+                        HorizontalLayout {
+                            alignment: center;
+                            Image { source: @image-url("../../../assets/logo.png"); width: 60px; height: 60px; }
+                        }
+                        Text { text: "Chào mừng đến Funput"; font-size: 20px; font-weight: 700; horizontal-alignment: center; color: Palette.foreground; }
+                        Text {
+                            text: "Gõ tiếng Việt ở mọi nơi trên Windows — miễn phí, mã nguồn mở.";
+                            font-size: 14px;
+                            horizontal-alignment: center;
+                            wrap: word-wrap;
+                            color: Theme.subtle;
+                        }
+                    }
+
+                    if root.step == 1: VerticalLayout {
+                        alignment: center;
+                        spacing: Theme.sp-sm;
+                        HorizontalLayout {
+                            alignment: center;
+                            Image { source: @image-url("icons/keyboard.svg"); colorize: Theme.accent; width: 42px; height: 42px; }
+                        }
+                        Text { text: "Chọn kiểu gõ"; font-size: 20px; font-weight: 700; horizontal-alignment: center; color: Palette.foreground; }
+                        Text { text: "Có thể đổi bất cứ lúc nào trong Cài đặt."; font-size: 14px; horizontal-alignment: center; color: Theme.subtle; }
+                        HorizontalLayout {
+                            alignment: center;
+                            Segmented {
+                                options: [{ id: "telex", label: "Telex" }, { id: "vni", label: "VNI" }];
+                                current: root.method;
+                                changed(v) => { root.pick-method(v); }
+                            }
+                        }
+                    }
+
+                    if root.step == 2: VerticalLayout {
+                        alignment: center;
+                        spacing: Theme.sp-sm;
+                        HorizontalLayout {
+                            alignment: center;
+                            Image { source: @image-url("icons/bell.svg"); colorize: Theme.accent; width: 42px; height: 42px; }
+                        }
+                        Text { text: "Cách hoạt động"; font-size: 20px; font-weight: 700; horizontal-alignment: center; color: Palette.foreground; }
+                        Text {
+                            text: "Funput chạy nền ở khay hệ thống (icon FU).";
+                            font-size: 14px;
+                            horizontal-alignment: center;
+                            wrap: word-wrap;
+                            color: Theme.subtle;
+                        }
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: Theme.sp-xs;
+                            Text { text: "Nhấn"; vertical-alignment: center; font-size: 14px; color: Theme.subtle; }
+                            KeyCap { label: "Ctrl"; }
+                            KeyCap { label: "`"; }
+                            Text { text: "để bật/tắt nhanh."; vertical-alignment: center; font-size: 14px; color: Theme.subtle; }
+                        }
+                        Text {
+                            text: "Lưu ý: không gõ được vào ứng dụng chạy quyền Administrator.";
+                            font-size: 12px;
+                            horizontal-alignment: center;
+                            wrap: word-wrap;
+                            color: Theme.faint;
+                        }
+                    }
+
+                    if root.step == 3: VerticalLayout {
+                        alignment: center;
+                        spacing: Theme.sp-sm;
+                        HorizontalLayout {
+                            alignment: center;
+                            Image { source: @image-url("icons/check.svg"); colorize: Theme.accent; width: 42px; height: 42px; }
+                        }
+                        Text { text: "Sẵn sàng!"; font-size: 20px; font-weight: 700; horizontal-alignment: center; color: Palette.foreground; }
+                        Text { text: "Bật tự khởi động để Funput luôn có mặt khi bạn cần."; font-size: 14px; horizontal-alignment: center; wrap: word-wrap; color: Theme.subtle; }
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: Theme.sp-md;
+                            Text { text: "Khởi động cùng Windows"; vertical-alignment: center; color: Palette.foreground; }
+                            Switch {
+                                checked <=> root.launch-at-login;
+                                toggled => { root.set-launch(self.checked); }
+                            }
+                        }
+                    }
+                }
+
+                // ---- nav ----
+                HorizontalLayout {
+                    spacing: Theme.sp-md;
+                    if root.step > 0: Button {
+                        text: "Quay lại";
+                        clicked => { root.step -= 1; }
+                    }
+                    Rectangle {
+                        horizontal-stretch: 1;
+                        HorizontalLayout {
+                            alignment: center;
+                            spacing: 6px;
+                            for i in [0, 1, 2, 3]: Dot { on: i == root.step; }
+                        }
+                    }
+                    Button {
+                        text: root.step < 3 ? "Tiếp tục" : "Bắt đầu";
+                        primary: true;
+                        clicked => {
+                            if (root.step < 3) {
+                                root.step += 1;
+                            } else {
+                                root.finish();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

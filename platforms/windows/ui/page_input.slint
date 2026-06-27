@@ -1,0 +1,40 @@
+// Settings → "Kiểu gõ": input method (Telex/VNI) + tone-mark placement style.
+
+import { Palette } from "std-widgets.slint";
+import { Theme, Card, Row, Segmented } from "theme.slint";
+
+export component InputPage inherits VerticalLayout {
+    in property <string> method;
+    in property <string> tone-style;
+    callback pick-method(string);
+    callback pick-tone(string);
+
+    spacing: Theme.sp-md;
+    Text { text: "Kiểu gõ"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
+    Card {
+        Row {
+            title: "Phương thức";
+            subtitle: root.method == "telex"
+                ? "Dấu bằng chữ cái — aa→â, ow→ơ, as→á, dd→đ"
+                : "Dấu bằng chữ số — a6→â, o7→ơ, a1→á, d9→đ";
+            Segmented {
+                options: [{ id: "telex", label: "Telex" }, { id: "vni", label: "VNI" }];
+                current: root.method;
+                changed(v) => { root.pick-method(v); }
+            }
+        }
+    }
+    Card {
+        Row {
+            title: "Kiểu đặt dấu";
+            subtitle: root.tone-style == "modern"
+                ? "Dấu kiểu mới — hoà, khoẻ, thuý"
+                : "Dấu kiểu cũ — hòa, khỏe, thúy";
+            Segmented {
+                options: [{ id: "traditional", label: "Truyền thống" }, { id: "modern", label: "Hiện đại" }];
+                current: root.tone-style;
+                changed(v) => { root.pick-tone(v); }
+            }
+        }
+    }
+}

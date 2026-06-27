@@ -1,0 +1,42 @@
+// Settings → "Thông minh": English auto-restore toggles + examples.
+
+import { Palette, Switch } from "std-widgets.slint";
+import { Theme, Card, Row } from "theme.slint";
+
+export component SmartPage inherits VerticalLayout {
+    in-out property <bool> smart-restore;
+    in-out property <bool> eager-restore;
+    callback set-smart(bool);
+    callback set-eager(bool);
+
+    spacing: Theme.sp-md;
+    Text { text: "Gõ thông minh"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
+    Card {
+        Row {
+            title: "Tự khôi phục tiếng Anh";
+            subtitle: "Từ không phải tiếng Việt giữ nguyên chữ gốc (card → card, không thành cảd).";
+            Switch {
+                checked <=> root.smart-restore;
+                toggled => { root.set-smart(self.checked); }
+            }
+        }
+        Rectangle { height: 1px; background: Palette.border; }
+        Row {
+            title: "Khôi phục tức thì";
+            subtitle: "Đổi lại ngay khi từ không thể là tiếng Việt, không chờ dấu cách.";
+            Switch {
+                checked <=> root.eager-restore;
+                enabled: root.smart-restore;
+                toggled => { root.set-eager(self.checked); }
+            }
+        }
+    }
+    Card {
+        VerticalLayout {
+            spacing: Theme.sp-xs;
+            Text { text: "Ví dụ"; font-size: 13px; font-weight: 600; color: Theme.subtle; }
+            Text { text: "text → text (giữ tiếng Anh)"; font-size: 13px; color: Palette.foreground; }
+            Text { text: "tieesng → tiếng (gõ tiếng Việt)"; font-size: 13px; color: Palette.foreground; }
+        }
+    }
+}

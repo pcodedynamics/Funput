@@ -136,6 +136,38 @@ FunputResult funput_process_char(FunputEngine *engine, uint32_t codepoint);
 uintptr_t funput_buffer(const FunputEngine *engine, uint32_t *out, uintptr_t cap);
 
 /**
+ * Define a text-expansion shortcut (gõ tắt): typing `trigger` then a word boundary
+ * injects `expansion` (`vn` → `Việt Nam`). Both strings are passed as UTF-32
+ * (`*const u32` + length), matching [`funput_buffer`]. An empty trigger is ignored
+ * by the engine; re-adding a trigger overwrites it.
+ *
+ * Hosts sync the whole table by calling [`funput_clear_shortcuts`] then adding each
+ * entry (the engine is a runtime mirror of the host's config).
+ *
+ * Null-safe: a null handle does nothing. A null `trigger`/`expansion` pointer is
+ * treated as an empty string.
+ *
+ * # Safety
+ * `engine` must be a valid handle or null. `trigger` must point to at least
+ * `trigger_len` `u32` values (or be null), and `expansion` to at least
+ * `expansion_len` `u32` values (or be null).
+ */
+void funput_add_shortcut(FunputEngine *engine,
+                         const uint32_t *trigger,
+                         uintptr_t trigger_len,
+                         const uint32_t *expansion,
+                         uintptr_t expansion_len);
+
+/**
+ * Remove every text-expansion shortcut. Combine with [`funput_add_shortcut`] to
+ * replace the whole table when syncing from config.
+ *
+ * # Safety
+ * `engine` must be a valid handle or null.
+ */
+void funput_clear_shortcuts(FunputEngine *engine);
+
+/**
  * Backspace inside the current composition: drop the last composed character so
  * the next keystroke composes against the corrected text (`Phua` ⌫ `s` → `Phú`).
  *

@@ -16,6 +16,12 @@ export struct AppEntry {
     name: string,
 }
 
+// One text-expansion shortcut (gõ tắt) row. Mirrors `settings::Shortcut`.
+export struct ShortcutEntry {
+    trigger: string,
+    expansion: string,
+}
+
 export global Theme {
     out property <bool> dark: Palette.color-scheme == ColorScheme.dark;
 

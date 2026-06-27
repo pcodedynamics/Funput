@@ -1,0 +1,78 @@
+// Settings → "Giới thiệu": version, auto-update flow, and links.
+
+import { Palette, Button } from "std-widgets.slint";
+import { Theme, Card } from "theme.slint";
+
+export component AboutPage inherits VerticalLayout {
+    in property <string> version;
+    // Auto-update: idle | checking | uptodate | available | downloading | ready | error
+    in property <string> update-state: "idle";
+    in property <string> update-version;
+    in property <string> update-message;
+    callback open-link(string);
+    callback check-update();
+    callback install-update();
+    callback relaunch-now();
+
+    spacing: Theme.sp-md;
+    Text { text: "Giới thiệu"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
+    Card {
+        VerticalLayout {
+            spacing: Theme.sp-sm;
+            HorizontalLayout {
+                alignment: center;
+                Image {
+                    source: @image-url("../../../assets/logo.png");
+                    width: 72px;
+                    height: 72px;
+                }
+            }
+            Text { text: "Funput"; font-size: 18px; font-weight: 700; horizontal-alignment: center; color: Palette.foreground; }
+            Text { text: "Bộ gõ tiếng Việt — miễn phí, mã nguồn mở."; font-size: 13px; horizontal-alignment: center; color: Theme.subtle; }
+            Text { text: "Phiên bản \{root.version}"; font-size: 12px; horizontal-alignment: center; color: Theme.subtle; }
+
+            // --- Cập nhật ---
+            if root.update-state != "idle": Text {
+                text: root.update-state == "checking" ? "Đang kiểm tra…"
+                    : root.update-state == "uptodate" ? "Bạn đang dùng bản mới nhất."
+                    : root.update-state == "available" ? "Có bản mới \{root.update-version}."
+                    : root.update-state == "downloading" ? "Đang tải bản cập nhật…"
+                    : root.update-state == "ready" ? "Đã cập nhật Funput. Khởi động lại để áp dụng."
+                    : root.update-message;
+                font-size: 12px;
+                horizontal-alignment: center;
+                wrap: word-wrap;
+                color: root.update-state == "error" ? #e5484d : Theme.subtle;
+            }
+            HorizontalLayout {
+                alignment: center;
+                spacing: Theme.sp-sm;
+                // Re-checkable from idle / up-to-date / error.
+                if root.update-state != "available" && root.update-state != "downloading" && root.update-state != "ready": Button {
+                    text: "Kiểm tra cập nhật…";
+                    enabled: root.update-state != "checking";
+                    clicked => { root.check-update(); }
+                }
+                if root.update-state == "available" || root.update-state == "downloading": Button {
+                    text: "Tải và cài đặt";
+                    enabled: root.update-state != "downloading";
+                    clicked => { root.install-update(); }
+                }
+                if root.update-state == "available": Button {
+                    text: "Xem thay đổi";
+                    clicked => { root.open-link("https://github.com/Funput/Funput/releases/latest"); }
+                }
+                if root.update-state == "ready": Button {
+                    text: "Khởi động lại";
+                    clicked => { root.relaunch-now(); }
+                }
+            }
+            HorizontalLayout {
+                alignment: center;
+                spacing: Theme.sp-sm;
+                Button { text: "GitHub"; clicked => { root.open-link("https://github.com/Funput/Funput"); } }
+                Button { text: "Website"; clicked => { root.open-link("https://funput.app/"); } }
+            }
+        }
+    }
+}

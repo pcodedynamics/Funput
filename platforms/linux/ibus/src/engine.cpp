@@ -51,6 +51,10 @@ void applySettings(EngineState *st) {
     st->handle_.setEnabled(st->effectiveEnabled_);
     st->handle_.setSmartRestore(st->settings_.smartRestore);
     st->handle_.setEagerRestore(st->settings_.eagerRestore);
+    st->handle_.clearShortcuts();
+    for (const auto &[trigger, expansion] : st->settings_.shortcuts) {
+        st->handle_.addShortcut(trigger, expansion);
+    }
     st->handle_.clear();
 }
 

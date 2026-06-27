@@ -100,10 +100,23 @@ bool Settings::reload() {
         }
     }
 
+    // shortcuts: [{ "trigger": "vn", "expansion": "Việt Nam" }, ...] — gõ tắt.
+    shortcuts.clear();
+    if (auto it = j.find("shortcuts"); it != j.end() && it->is_array()) {
+        for (const auto &sc : *it) {
+            if (sc.is_object() && sc.contains("trigger") && sc["trigger"].is_string() &&
+                sc.contains("expansion") && sc["expansion"].is_string()) {
+                shortcuts.emplace_back(sc["trigger"].get<std::string>(),
+                                       sc["expansion"].get<std::string>());
+            }
+        }
+    }
+
     return method != prev.method || toneStyle != prev.toneStyle ||
            enabled != prev.enabled || smartRestore != prev.smartRestore ||
            eagerRestore != prev.eagerRestore ||
-           toggleHotkey != prev.toggleHotkey || excludedAppIds != prev.excludedAppIds;
+           toggleHotkey != prev.toggleHotkey || excludedAppIds != prev.excludedAppIds ||
+           shortcuts != prev.shortcuts;
 }
 
 bool Settings::isExcluded(const std::string &program) const {
