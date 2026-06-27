@@ -88,6 +88,34 @@ impl Engine {
         self.session.clear();
     }
 
+    /// Define a text-expansion shortcut (gõ tắt): typing `trigger` then a word
+    /// boundary injects `expansion` (`add_shortcut("vn", "Việt Nam")`). Triggers
+    /// match the raw keystrokes case-sensitively and take priority over English
+    /// restore. An empty `trigger` is ignored. Re-adding a trigger overwrites it.
+    pub fn add_shortcut(&mut self, trigger: impl Into<String>, expansion: impl Into<String>) {
+        let trigger = trigger.into();
+        if trigger.is_empty() {
+            return;
+        }
+        self.session.shortcuts.insert(trigger, expansion.into());
+    }
+
+    /// Remove a single shortcut by its trigger. No-op if it is not defined.
+    pub fn remove_shortcut(&mut self, trigger: &str) {
+        self.session.shortcuts.remove(trigger);
+    }
+
+    /// Remove every shortcut. Combine with [`Self::add_shortcut`] to replace the
+    /// whole table when syncing from a config file.
+    pub fn clear_shortcuts(&mut self) {
+        self.session.shortcuts.clear();
+    }
+
+    /// The current shortcut table — trigger → expansion.
+    pub fn shortcuts(&self) -> &std::collections::HashMap<String, String> {
+        &self.session.shortcuts
+    }
+
     /// Composed syllable buffer — text the app should show for the current word.
     pub fn buffer(&self) -> &str {
         &self.session.buffer
