@@ -29,6 +29,7 @@ struct SettingsView: View {
         case .general: GeneralPane()
         case .inputMethod: InputMethodPane()
         case .smart: SmartPane()
+        case .shortcuts: ShortcutsPane()
         case .keyboard: KeyboardPane()
         case .apps: AppExclusionPane()
         case .about: AboutPane()
