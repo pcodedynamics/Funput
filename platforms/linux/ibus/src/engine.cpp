@@ -52,6 +52,7 @@ void applySettings(EngineState *st) {
     st->handle_.setSmartRestore(st->settings_.smartRestore);
     st->handle_.setEagerRestore(st->settings_.eagerRestore);
     st->handle_.setSpellCheck(st->settings_.spellCheck);
+    st->handle_.setAutoCapitalize(st->settings_.autoCapitalize);
     st->handle_.clearShortcuts();
     for (const auto &[trigger, expansion] : st->settings_.shortcuts) {
         st->handle_.addShortcut(trigger, expansion);
@@ -91,7 +92,15 @@ void commitBuffer(IBusEngine *engine, EngineState *st) {
 // with output = rawKeys + boundaryChar; otherwise we keep the composed buffer.
 bool handleBoundary(IBusEngine *engine, EngineState *st, char32_t scalar) {
     const std::string pre = st->handle_.buffer();
-    if (pre.empty()) return false; // not composing → let the app handle the key
+    if (pre.empty()) {
+        // Not composing: let the app handle the key, but feed it to the engine first so
+        // auto-capitalize can track sentence context across the gap (e.g. the space in
+        // "End. Next" arrives with an empty buffer).
+        if (st->settings_.autoCapitalize) {
+            st->handle_.process(static_cast<uint32_t>(scalar));
+        }
+        return false;
+    }
 
     const FunputResult r = st->handle_.process(static_cast<uint32_t>(scalar));
     std::string word;
@@ -180,6 +189,11 @@ static gboolean ibus_funput_engine_process_key_event(IBusEngine *engine, guint k
     // carry no Unicode value — end composition and let the app handle them.
     const guint32 uc = ibus_keyval_to_unicode(keyval);
     if (uc == 0) {
+        // Enter starts a new line → arm auto-capitalize (the engine never sees the
+        // newline on this no-Unicode path). No-op unless the feature is on.
+        if (st->settings_.autoCapitalize && keyval == IBUS_KEY_Return) {
+            st->handle_.armCapitalization();
+        }
         commitBuffer(engine, st);
         return FALSE;
     }
@@ -201,6 +215,8 @@ static gboolean ibus_funput_engine_process_key_event(IBusEngine *engine, guint k
 static void ibus_funput_engine_focus_in(IBusEngine *engine) {
     EngineState *st = FUNPUT_ENGINE(engine)->state;
     if (st->settings_.reloadIfChanged()) applySettings(st);
+    // Focus is the start of input: arm so the first letter is capitalized.
+    if (st->settings_.autoCapitalize) st->handle_.armCapitalization();
 }
 
 static void ibus_funput_engine_enable(IBusEngine *engine) {

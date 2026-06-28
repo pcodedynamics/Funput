@@ -28,6 +28,10 @@ pub fn set_spell_check(on: bool) {
     shell::set_spell_check(on);
 }
 
+pub fn set_auto_capitalize(on: bool) {
+    shell::set_auto_capitalize(on);
+}
+
 pub fn set_toggle_hotkey(hotkey: Hotkey) {
     shell::set_toggle_hotkey(hotkey);
 }

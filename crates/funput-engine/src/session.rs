@@ -27,6 +27,17 @@ pub(crate) struct Session {
     /// still become a real Vietnamese syllable, otherwise keep the modifier key as a
     /// literal (UniKey-style strict diacritics). Off by default.
     pub(crate) spell_check: bool,
+    /// Auto-capitalize ("Tự động viết hoa"): uppercase the first letter of a word at
+    /// the start of a sentence. Off by default.
+    pub(crate) auto_capitalize: bool,
+    /// A sentence-ending mark (`.`/`!`/`?`) was just seen; waiting for whitespace to
+    /// confirm the next word starts a new sentence. Survives `clear()` — capitalize
+    /// state spans word commits.
+    pub(crate) cap_sentence_ended: bool,
+    /// The next word's first letter should be capitalized. Set by a confirmed
+    /// sentence start (whitespace after `.`/`!`/`?`, a newline) or focus; consumed
+    /// when a word begins. Survives `clear()`.
+    pub(crate) cap_armed: bool,
     /// Text-expansion table (gõ tắt): raw-keystroke trigger → expansion. Matched
     /// case-sensitively against `keys` at a word boundary, before English restore.
     /// Config that lives for the whole session — `clear()` does not touch it.
@@ -44,6 +55,9 @@ impl Session {
             smart_restore: true,
             eager_restore: true,
             spell_check: false,
+            auto_capitalize: false,
+            cap_sentence_ended: false,
+            cap_armed: false,
             shortcuts: HashMap::new(),
         }
     }

@@ -89,6 +89,7 @@ bool Settings::reload() {
     smartRestore = j.value("smartRestore", smartRestore);
     eagerRestore = j.value("eagerRestore", eagerRestore);
     spellCheck = j.value("spellCheck", spellCheck);
+    autoCapitalize = j.value("autoCapitalize", autoCapitalize);
     toggleHotkey = parseHotkey(j.value("toggleHotkey", std::string(hotkeyStr(toggleHotkey))));
 
     // excludedApps: [{ "id": "code", "name": "Code" }, ...] — keep just the ids.
@@ -116,6 +117,7 @@ bool Settings::reload() {
     return method != prev.method || toneStyle != prev.toneStyle ||
            enabled != prev.enabled || smartRestore != prev.smartRestore ||
            eagerRestore != prev.eagerRestore || spellCheck != prev.spellCheck ||
+           autoCapitalize != prev.autoCapitalize ||
            toggleHotkey != prev.toggleHotkey || excludedAppIds != prev.excludedAppIds ||
            shortcuts != prev.shortcuts;
 }
@@ -147,6 +149,7 @@ void Settings::save() const {
     j["smartRestore"] = smartRestore;
     j["eagerRestore"] = eagerRestore;
     j["spellCheck"] = spellCheck;
+    j["autoCapitalize"] = autoCapitalize;
     j["toggleHotkey"] = hotkeyStr(toggleHotkey);
 
     std::ofstream out(p, std::ios::trunc);

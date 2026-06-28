@@ -90,6 +90,26 @@ impl Engine {
         self.session.spell_check = on;
     }
 
+    /// Toggle auto-capitalize ("Tự động viết hoa"): uppercase the first letter of a
+    /// word that starts a sentence (sentence start, after `.`/`!`/`?` + space, after a
+    /// newline). Off by default; when off this is a complete no-op.
+    pub fn set_auto_capitalize(&mut self, on: bool) {
+        self.session.auto_capitalize = on;
+        if !on {
+            self.session.cap_armed = false;
+            self.session.cap_sentence_ended = false;
+        }
+    }
+
+    /// Arm capitalization for the next word — the platform calls this when a text
+    /// field gains focus, so the first letter typed (start of input) is capitalized.
+    /// No-op unless auto-capitalize is on.
+    pub fn arm_capitalization(&mut self) {
+        if self.session.auto_capitalize {
+            self.session.cap_armed = true;
+        }
+    }
+
     /// Reset composition state (buffer and raw keys) without changing enabled/method.
     pub fn clear(&mut self) {
         self.session.clear();
@@ -166,8 +186,27 @@ impl Engine {
         if boundary::is_word_boundary(key) {
             return boundary::on_word_boundary(&mut self.session, key);
         }
+        let key = self.maybe_capitalize(key);
         self.session.keys.push(key);
         pipeline::process(&mut self.session, key)
+    }
+
+    /// Auto-capitalize the first letter of a new word when armed. Consumes the armed
+    /// state at the start of any word (letter or not), so it only ever affects the
+    /// first keystroke. The first keystroke of a Telex/VNI word is an ASCII Latin
+    /// letter, so `to_ascii_uppercase` is sufficient.
+    fn maybe_capitalize(&mut self, key: char) -> char {
+        if !self.session.auto_capitalize || !self.session.buffer.is_empty() {
+            return key;
+        }
+        let armed = self.session.cap_armed;
+        self.session.cap_armed = false;
+        self.session.cap_sentence_ended = false;
+        if armed && key.is_alphabetic() {
+            key.to_ascii_uppercase()
+        } else {
+            key
+        }
     }
 }
 
@@ -233,6 +272,93 @@ mod tests {
         // Real syllables are unaffected.
         assert_eq!(type_word(&mut engine, "mas"), "má");
         assert_eq!(type_word(&mut engine, "tets"), "tét");
+    }
+
+    // ---- Auto-capitalize ("Tự động viết hoa") ----
+
+    fn engine_autocap() -> Engine {
+        let mut e = Engine::new();
+        e.set_auto_capitalize(true);
+        e
+    }
+
+    /// Feed a string keystroke-by-keystroke; return the current composition buffer.
+    fn feed(engine: &mut Engine, s: &str) -> String {
+        for k in s.chars() {
+            engine.process_char(k);
+        }
+        engine.buffer().to_string()
+    }
+
+    #[test]
+    fn autocap_focus_capitalizes_first_word() {
+        let mut e = engine_autocap();
+        e.arm_capitalization();
+        assert_eq!(feed(&mut e, "viet"), "Viet");
+    }
+
+    #[test]
+    fn autocap_first_letter_composes_vietnamese() {
+        let mut e = engine_autocap();
+        e.arm_capitalization();
+        assert_eq!(feed(&mut e, "chaof"), "Chào"); // Telex
+        e.clear();
+        e.arm_capitalization();
+        assert_eq!(feed(&mut e, "dd"), "Đ"); // capital đ
+    }
+
+    #[test]
+    fn autocap_after_sentence_end_and_space() {
+        let mut e = engine_autocap();
+        feed(&mut e, "ok");
+        e.process_char('.'); // commits "ok", marks sentence end
+        e.process_char(' '); // whitespace confirms → arm
+        assert_eq!(feed(&mut e, "lam"), "Lam");
+    }
+
+    #[test]
+    fn autocap_requires_whitespace_after_period() {
+        let mut e = engine_autocap();
+        feed(&mut e, "google");
+        e.process_char('.'); // no whitespace follows
+        assert_eq!(feed(&mut e, "com"), "com"); // google.com stays lower
+    }
+
+    #[test]
+    fn autocap_newline_arms() {
+        let mut e = engine_autocap();
+        feed(&mut e, "ok");
+        e.process_char('\n');
+        assert_eq!(feed(&mut e, "lam"), "Lam");
+    }
+
+    #[test]
+    fn autocap_comma_does_not_arm() {
+        let mut e = engine_autocap();
+        feed(&mut e, "ok");
+        e.process_char(',');
+        e.process_char(' ');
+        assert_eq!(feed(&mut e, "lam"), "lam");
+    }
+
+    #[test]
+    fn autocap_closing_quote_is_transparent() {
+        let mut e = engine_autocap();
+        feed(&mut e, "di");
+        e.process_char('.'); // sentence end
+        e.process_char('"'); // transparent closer
+        e.process_char(' '); // arm
+        assert_eq!(feed(&mut e, "roi"), "Roi");
+    }
+
+    #[test]
+    fn autocap_off_is_noop() {
+        let mut e = Engine::new(); // default off
+        e.arm_capitalization(); // no-op while off
+        assert_eq!(feed(&mut e, "viet"), "viet");
+        e.process_char('.');
+        e.process_char(' ');
+        assert_eq!(feed(&mut e, "lam"), "lam");
     }
 
     #[test]

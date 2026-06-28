@@ -7,9 +7,11 @@ export component SmartPage inherits VerticalLayout {
     in-out property <bool> smart-restore;
     in-out property <bool> eager-restore;
     in-out property <bool> spell-check;
+    in-out property <bool> auto-capitalize;
     callback set-smart(bool);
     callback set-eager(bool);
     callback set-spell(bool);
+    callback set-auto-cap(bool);
 
     spacing: Theme.sp-md;
     Text { text: "Gõ thông minh"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
@@ -39,6 +41,15 @@ export component SmartPage inherits VerticalLayout {
             Switch {
                 checked <=> root.spell-check;
                 toggled => { root.set-spell(self.checked); }
+            }
+        }
+        Rectangle { height: 1px; background: Palette.border; }
+        Row {
+            title: "Tự động viết hoa";
+            subtitle: "Viết hoa chữ đầu câu, sau dấu chấm và đầu dòng.";
+            Switch {
+                checked <=> root.auto-capitalize;
+                toggled => { root.set-auto-cap(self.checked); }
             }
         }
     }

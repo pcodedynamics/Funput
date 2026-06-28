@@ -44,9 +44,19 @@ pub(super) fn page() -> PreferencesPage {
         let on = row.is_active();
         Settings::update(|s| s.spell_check = on);
     });
+    let auto_cap_row = SwitchRow::builder()
+        .title("Tự động viết hoa")
+        .subtitle("Viết hoa chữ đầu câu, sau dấu chấm và đầu dòng.")
+        .active(s.auto_capitalize)
+        .build();
+    auto_cap_row.connect_active_notify(|row| {
+        let on = row.is_active();
+        Settings::update(|s| s.auto_capitalize = on);
+    });
     group.add(&smart_row);
     group.add(&eager_row);
     group.add(&spell_row);
+    group.add(&auto_cap_row);
     page.add(&group);
 
     // Informational examples (read-only).

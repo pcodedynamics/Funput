@@ -62,6 +62,7 @@ void FunputEngine::applySettings() {
     handle_.setSmartRestore(settings_.smartRestore);
     handle_.setEagerRestore(settings_.eagerRestore);
     handle_.setSpellCheck(settings_.spellCheck);
+    handle_.setAutoCapitalize(settings_.autoCapitalize);
     handle_.clearShortcuts();
     for (const auto &[trigger, expansion] : settings_.shortcuts) {
         handle_.addShortcut(trigger, expansion);
@@ -141,7 +142,15 @@ void FunputEngine::commitBuffer(fcitx::InputContext *ic) {
 // with output = rawKeys + boundaryChar; otherwise we keep the composed buffer.
 bool FunputEngine::handleBoundary(fcitx::InputContext *ic, char32_t scalar) {
     const std::string pre = handle_.buffer();
-    if (pre.empty()) return false; // not composing → let the app handle the key
+    if (pre.empty()) {
+        // Not composing: let the app handle the key, but feed it to the engine first so
+        // auto-capitalize can track sentence context across the gap (e.g. the space in
+        // "End. Next" arrives with an empty buffer).
+        if (settings_.autoCapitalize) {
+            handle_.process(static_cast<uint32_t>(scalar));
+        }
+        return false;
+    }
 
     const FunputResult r = handle_.process(static_cast<uint32_t>(scalar));
     std::string word;
@@ -218,6 +227,11 @@ void FunputEngine::keyEvent(const fcitx::InputMethodEntry &, fcitx::KeyEvent &ke
     // carry no Unicode value — end composition and let the app handle them.
     const uint32_t uc = fcitx::Key::keySymToUnicode(key.sym());
     if (uc == 0) {
+        // Enter starts a new line → arm auto-capitalize (the engine never sees the
+        // newline on this no-Unicode path). No-op unless the feature is on.
+        if (settings_.autoCapitalize && key.sym() == FcitxKey_Return) {
+            handle_.armCapitalization();
+        }
         commitBuffer(ic);
         return;
     }
@@ -242,6 +256,8 @@ void FunputEngine::reset(const fcitx::InputMethodEntry &, fcitx::InputContextEve
 void FunputEngine::activate(const fcitx::InputMethodEntry &, fcitx::InputContextEvent &event) {
     // Pick up settings changed while unfocused (fallback to the live watcher).
     if (settings_.reloadIfChanged()) applySettings();
+    // Focus is the start of input: arm so the first letter is capitalized.
+    if (settings_.autoCapitalize) handle_.armCapitalization();
     // Per-app auto-switch on focus-in, mirroring the macOS shell's activateServer.
     const std::string program = event.inputContext()->program();
     lastProgram_ = program; // remembered for live settings reloads

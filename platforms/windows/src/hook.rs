@@ -14,7 +14,7 @@ use windows::Win32::System::Threading::{
     OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
 };
 use windows::Win32::UI::Accessibility::{SetWinEventHook, HWINEVENTHOOK};
-use windows::Win32::UI::Input::KeyboardAndMouse::VIRTUAL_KEY;
+use windows::Win32::UI::Input::KeyboardAndMouse::{VIRTUAL_KEY, VK_RETURN};
 use windows::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, DispatchMessageW, GetMessageW, GetWindowThreadProcessId, PostQuitMessage,
     SetWindowsHookExW, TranslateMessage, EVENT_SYSTEM_FOREGROUND, HC_ACTION, KBDLLHOOKSTRUCT, MSG,
@@ -104,6 +104,8 @@ unsafe extern "system" fn win_event_proc(
         tray::sync_from_shell();
     }
     shell::note_foreground(id.clone(), name);
+    // Focus on a new app is the start of input: arm so the first letter is capitalized.
+    shell::arm_capitalization();
     if let Some(on) = shell::apply_for_app(&id) {
         if let Some(cb) = ON_TOGGLE.get() {
             cb(on); // keep tray checkmark / tooltip in sync with the auto-switch
@@ -218,6 +220,11 @@ fn handle_keydown(kbd: &KBDLLHOOKSTRUCT) -> bool {
         }
         KeyKind::Flush => {
             shell::clear(); // commit what is shown; nav/Enter/Tab/shortcut passes
+            // Enter starts a new line → arm auto-capitalize (no-op unless the feature
+            // is on). The engine never sees the newline itself on this path.
+            if vk == VK_RETURN {
+                shell::arm_capitalization();
+            }
             false
         }
         KeyKind::PassThrough => false,

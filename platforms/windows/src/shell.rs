@@ -44,6 +44,7 @@ fn apply_to_engine(engine: &mut Engine, s: &Settings) {
     engine.set_smart_restore(s.smart_restore);
     engine.set_eager_restore(s.eager_restore);
     engine.set_spell_check(s.spell_check);
+    engine.set_auto_capitalize(s.auto_capitalize);
     push_shortcuts(engine, &s.shortcuts);
     engine.clear();
 }
@@ -239,6 +240,21 @@ pub fn set_spell_check(on: bool) {
         s.engine.set_spell_check(on);
         s.settings.save();
     });
+}
+
+pub fn set_auto_capitalize(on: bool) {
+    with(|s| {
+        s.settings.auto_capitalize = on;
+        s.engine.set_auto_capitalize(on);
+        s.settings.save();
+    });
+}
+
+/// Arm auto-capitalize for the next word (the engine no-ops unless the feature is on).
+/// Called on foreground change so the first letter typed in a newly-focused app is
+/// capitalized, and after Enter for a new line.
+pub fn arm_capitalization() {
+    with(|s| s.engine.arm_capitalization());
 }
 
 pub fn set_toggle_hotkey(hotkey: Hotkey) {

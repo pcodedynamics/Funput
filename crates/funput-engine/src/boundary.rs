@@ -63,6 +63,35 @@ fn shortcut_expansion(session: &Session, boundary_key: char) -> Option<ImeResult
     Some(ImeResult::send(backspace, output))
 }
 
+/// Update auto-capitalize state from a boundary key. No-op unless the feature is on.
+/// A sentence-ender (`.`/`!`/`?`) only *arms* once whitespace confirms the break, so
+/// `google.com` is left alone while `End. Next` is capitalized; a newline arms
+/// directly; quotes/brackets are transparent (`He said "Hi." Next`); any other
+/// punctuation cancels a pending capitalization.
+fn update_caps_on_boundary(session: &mut Session, key: char) {
+    if !session.auto_capitalize {
+        return;
+    }
+    match key {
+        '.' | '!' | '?' => session.cap_sentence_ended = true,
+        '\n' | '\r' => {
+            session.cap_armed = true;
+            session.cap_sentence_ended = false;
+        }
+        ' ' | '\t' => {
+            if session.cap_sentence_ended {
+                session.cap_armed = true;
+            }
+        }
+        // Quotes and brackets are transparent — they don't open or end a sentence.
+        '"' | '\'' | '(' | ')' | '[' | ']' | '{' | '}' => {}
+        _ => {
+            session.cap_sentence_ended = false;
+            session.cap_armed = false;
+        }
+    }
+}
+
 /// End-of-word: expand a gõ tắt trigger, else optionally restore English Latin text,
 /// then reset composition state. Text expansion takes priority over English restore.
 pub(crate) fn on_word_boundary(session: &mut Session, boundary_key: char) -> ImeResult {
@@ -73,6 +102,7 @@ pub(crate) fn on_word_boundary(session: &mut Session, boundary_key: char) -> Ime
     } else {
         ImeResult::none()
     };
+    update_caps_on_boundary(session, boundary_key);
     session.clear();
     result
 }
@@ -107,6 +137,9 @@ mod tests {
             smart_restore: true,
             eager_restore: true,
             spell_check: false,
+            auto_capitalize: false,
+            cap_sentence_ended: false,
+            cap_armed: false,
             shortcuts: HashMap::new(),
         };
         assert!(should_restore(&session));
@@ -123,6 +156,9 @@ mod tests {
             smart_restore: true,
             eager_restore: true,
             spell_check: false,
+            auto_capitalize: false,
+            cap_sentence_ended: false,
+            cap_armed: false,
             shortcuts: HashMap::new(),
         };
         assert!(!should_restore(&session));
@@ -139,6 +175,9 @@ mod tests {
             smart_restore: true,
             eager_restore: true,
             spell_check: false,
+            auto_capitalize: false,
+            cap_sentence_ended: false,
+            cap_armed: false,
             shortcuts: HashMap::new(),
         };
         assert!(!should_restore(&session));
@@ -162,6 +201,9 @@ mod tests {
             smart_restore: true,
             eager_restore: true,
             spell_check: false,
+            auto_capitalize: false,
+            cap_sentence_ended: false,
+            cap_armed: false,
             shortcuts: HashMap::new(),
         };
         assert!(!should_restore(&session));
@@ -179,6 +221,9 @@ mod tests {
             smart_restore: true,
             eager_restore: true,
             spell_check: false,
+            auto_capitalize: false,
+            cap_sentence_ended: false,
+            cap_armed: false,
             shortcuts: HashMap::new(),
         };
         assert!(!should_restore(&session));
@@ -195,6 +240,9 @@ mod tests {
             smart_restore: true,
             eager_restore: true,
             spell_check: false,
+            auto_capitalize: false,
+            cap_sentence_ended: false,
+            cap_armed: false,
             shortcuts: HashMap::new(),
         };
         let result = on_word_boundary(&mut session, ' ');
@@ -216,6 +264,9 @@ mod tests {
             smart_restore: true,
             eager_restore: true,
             spell_check: false,
+            auto_capitalize: false,
+            cap_sentence_ended: false,
+            cap_armed: false,
             shortcuts: HashMap::new(),
         };
         let result = on_word_boundary(&mut session, ' ');

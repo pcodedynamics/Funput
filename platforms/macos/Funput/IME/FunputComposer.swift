@@ -45,6 +45,18 @@ final class FunputComposer {
         funput_set_spell_check(handle, on)
     }
 
+    /// Auto-capitalize ("Tự động viết hoa"): uppercase the first letter at the start
+    /// of a sentence.
+    func setAutoCapitalize(_ on: Bool) {
+        funput_set_auto_capitalize(handle, on)
+    }
+
+    /// Arm capitalization for the next word (call on focus so the first letter typed
+    /// in a field is capitalized). A no-op unless auto-capitalize is on.
+    func armCapitalization() {
+        funput_arm_capitalization(handle)
+    }
+
     func clear() {
         funput_clear(handle)
     }

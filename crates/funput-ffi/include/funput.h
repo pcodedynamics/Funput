@@ -115,6 +115,24 @@ void funput_set_eager_restore(FunputEngine *engine, bool on);
 void funput_set_spell_check(FunputEngine *engine, bool on);
 
 /**
+ * Toggle auto-capitalize ("Tự động viết hoa") — uppercase the first letter of a word
+ * that starts a sentence. Off by default; a no-op while off.
+ *
+ * # Safety
+ * `engine` must be a valid handle or null.
+ */
+void funput_set_auto_capitalize(FunputEngine *engine, bool on);
+
+/**
+ * Arm capitalization for the next word — call on text-field focus so the first
+ * letter typed (start of input) is capitalized. A no-op unless auto-capitalize is on.
+ *
+ * # Safety
+ * `engine` must be a valid handle or null.
+ */
+void funput_arm_capitalization(FunputEngine *engine);
+
+/**
  * Reset composition state (buffer + raw keys), e.g. on focus change.
  *
  * # Safety

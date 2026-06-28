@@ -33,6 +33,7 @@ export component SettingsWindow inherits Window {
     in-out property <bool> smart-restore;
     in-out property <bool> eager-restore;
     in-out property <bool> spell-check;
+    in-out property <bool> auto-capitalize;
     in-out property <bool> launch-at-login;
     in property <[AppEntry]> excluded-apps;
     in property <[AppEntry]> recent-apps;
@@ -50,6 +51,7 @@ export component SettingsWindow inherits Window {
     callback set-smart(bool);
     callback set-eager(bool);
     callback set-spell(bool);
+    callback set-auto-cap(bool);
     callback set-launch(bool);
     callback add-app(string);
     callback remove-app(string);
@@ -158,9 +160,11 @@ export component SettingsWindow inherits Window {
                     smart-restore <=> root.smart-restore;
                     eager-restore <=> root.eager-restore;
                     spell-check <=> root.spell-check;
+                    auto-capitalize <=> root.auto-capitalize;
                     set-smart(v) => { root.set-smart(v); }
                     set-eager(v) => { root.set-eager(v); }
                     set-spell(v) => { root.set-spell(v); }
+                    set-auto-cap(v) => { root.set-auto-cap(v); }
                 }
 
                 if root.active == "shortcuts": ShortcutsPage {

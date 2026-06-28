@@ -39,6 +39,7 @@ fn populate(window: &SettingsWindow) {
     window.set_smart_restore(settings.smart_restore);
     window.set_eager_restore(settings.eager_restore);
     window.set_spell_check(settings.spell_check);
+    window.set_auto_capitalize(settings.auto_capitalize);
     window.set_launch_at_login(settings.launch_at_login);
     window.set_version(env!("CARGO_PKG_VERSION").into());
     window.set_update_state("idle".into());

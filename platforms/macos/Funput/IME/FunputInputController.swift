@@ -105,6 +105,8 @@ final class FunputInputController: IMKInputController {
         super.activateServer(sender)
         applyPerAppDefault()
         syncSettings()
+        // Focus on a field is the start of input: arm so the first letter is capitalized.
+        if AppSettings.shared.autoCapitalizeEnabled { composer.armCapitalization() }
     }
 
     override func deactivateServer(_ sender: Any!) {
@@ -137,7 +139,13 @@ final class FunputInputController: IMKInputController {
     /// Boundary key (space / punctuation / Enter / Tab) while composing.
     private func commitBoundary(_ scalar: Unicode.Scalar, into client: IMKTextInput) -> Bool {
         let pre = composer.buffer()
-        guard !pre.isEmpty else { return false } // not composing → let the app handle the key
+        guard !pre.isEmpty else {
+            // Not composing: the app inserts the key itself. Still feed it to the engine
+            // so auto-capitalize can track sentence context across the gap — e.g. the
+            // space in "End. Next" arrives here with an empty buffer.
+            if AppSettings.shared.autoCapitalizeEnabled { _ = composer.process(scalar) }
+            return false
+        }
 
         // The engine decides English-restore, then clears the session. On restore it
         // returns Action::Send with output = rawKeys + boundaryChar; otherwise keep `pre`.
@@ -197,6 +205,7 @@ final class FunputInputController: IMKInputController {
         composer.setSmartRestore(settings.smartEnglishRestore)
         composer.setEagerRestore(settings.eagerRestore)
         composer.setSpellCheck(settings.spellCheckEnabled)
+        composer.setAutoCapitalize(settings.autoCapitalizeEnabled)
 
         // Re-marshal the gõ tắt table only when it actually changed (cheap on the
         // common keystroke path where nothing changed).

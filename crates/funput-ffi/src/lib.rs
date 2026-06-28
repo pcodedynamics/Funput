@@ -132,6 +132,30 @@ pub unsafe extern "C" fn funput_set_spell_check(engine: *mut FunputEngine, on: b
     }
 }
 
+/// Toggle auto-capitalize ("Tự động viết hoa") — uppercase the first letter of a word
+/// that starts a sentence. Off by default; a no-op while off.
+///
+/// # Safety
+/// `engine` must be a valid handle or null.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn funput_set_auto_capitalize(engine: *mut FunputEngine, on: bool) {
+    if let Some(engine) = unsafe { engine.as_mut() } {
+        engine.inner.set_auto_capitalize(on);
+    }
+}
+
+/// Arm capitalization for the next word — call on text-field focus so the first
+/// letter typed (start of input) is capitalized. A no-op unless auto-capitalize is on.
+///
+/// # Safety
+/// `engine` must be a valid handle or null.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn funput_arm_capitalization(engine: *mut FunputEngine) {
+    if let Some(engine) = unsafe { engine.as_mut() } {
+        engine.inner.arm_capitalization();
+    }
+}
+
 /// Reset composition state (buffer + raw keys), e.g. on focus change.
 ///
 /// # Safety

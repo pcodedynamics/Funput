@@ -51,6 +51,11 @@ final class AppSettings {
     var spellCheckEnabled: Bool {
         didSet { defaults.set(spellCheckEnabled, forKey: Keys.spellCheckEnabled) }
     }
+    /// Auto-capitalize ("Tự động viết hoa"): uppercase the first letter at the start of
+    /// a sentence. Off by default.
+    var autoCapitalizeEnabled: Bool {
+        didSet { defaults.set(autoCapitalizeEnabled, forKey: Keys.autoCapitalizeEnabled) }
+    }
     var toggleShortcut: ToggleShortcut {
         didSet { defaults.set(toggleShortcut.rawValue, forKey: Keys.toggleShortcut) }
     }
@@ -96,6 +101,7 @@ final class AppSettings {
         smartEnglishRestore = defaults.bool(forKey: Keys.smartEnglishRestore)
         eagerRestore = defaults.bool(forKey: Keys.eagerRestore)
         spellCheckEnabled = defaults.bool(forKey: Keys.spellCheckEnabled)
+        autoCapitalizeEnabled = defaults.bool(forKey: Keys.autoCapitalizeEnabled)
         toggleShortcut = defaults.string(forKey: Keys.toggleShortcut)
             .flatMap(ToggleShortcut.init(rawValue:)) ?? .controlBackslash
         launchAtLogin = defaults.bool(forKey: Keys.launchAtLogin)
@@ -145,6 +151,7 @@ final class AppSettings {
         static let smartEnglishRestore = "smartEnglishRestore"
         static let eagerRestore = "eagerRestore"
         static let spellCheckEnabled = "spellCheckEnabled"
+        static let autoCapitalizeEnabled = "autoCapitalizeEnabled"
         static let toggleShortcut = "toggleShortcut"
         static let launchAtLogin = "launchAtLogin"
         static let showMenuBarIcon = "showMenuBarIcon"

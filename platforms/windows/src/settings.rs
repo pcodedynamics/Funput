@@ -149,6 +149,10 @@ pub struct Settings {
     /// Vietnamese syllable. `#[serde(default)]` keeps older settings files loadable.
     #[serde(default)]
     pub spell_check: bool,
+    /// Auto-capitalize ("Tự động viết hoa"): uppercase the first letter at the start of
+    /// a sentence. `#[serde(default)]` keeps older settings files loadable.
+    #[serde(default)]
+    pub auto_capitalize: bool,
     pub toggle_hotkey: Hotkey,
     pub launch_at_login: bool,
     pub has_completed_onboarding: bool,
@@ -171,6 +175,7 @@ impl Default for Settings {
             smart_restore: true,
             eager_restore: true,
             spell_check: false,
+            auto_capitalize: false,
             toggle_hotkey: Hotkey::CtrlBacktick,
             launch_at_login: false,
             has_completed_onboarding: false,

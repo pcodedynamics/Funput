@@ -39,6 +39,16 @@ struct SmartPane: View {
                             .labelsHidden()
                             .toggleStyle(.switch)
                     }
+                    Divider()
+                    SettingsRow(
+                        title: "Tự động viết hoa",
+                        subtitle: "Viết hoa chữ đầu câu, sau dấu chấm và đầu dòng",
+                        systemImage: "textformat.abc.dottedunderline"
+                    ) {
+                        Toggle("", isOn: $settings.autoCapitalizeEnabled)
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
                 }
             }
 
@@ -49,6 +59,7 @@ struct SmartPane: View {
                     exampleRow("phus", "phú", "âm tiết hợp lệ → có dấu")
                     exampleRow("mixx", "mix", "gõ đúp dấu để ra tiếng Anh")
                     exampleRow("tetf", "tetf", "kiểm tra chính tả → không đặt dấu sai")
+                    exampleRow("xong. roi", "Xong. Rồi", "tự động viết hoa đầu câu")
                 }
             }
         }

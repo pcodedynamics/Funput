@@ -27,6 +27,9 @@ struct Settings {
     // Spell-check ("Kiểm tra chính tả"): only place a diacritic that forms a valid
     // Vietnamese syllable. Off by default.
     bool spellCheck = false;
+    // Auto-capitalize ("Tự động viết hoa"): uppercase the first letter at the start of
+    // a sentence. Off by default.
+    bool autoCapitalize = false;
     Hotkey toggleHotkey = Hotkey::CtrlBacktick;
     // App identifiers (fcitx5 program() / WM_CLASS) that default to English on
     // focus. Owned by the Settings UI; the addon only reads them for matching.
