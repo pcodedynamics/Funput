@@ -7,7 +7,7 @@ license.workspace = true
 [dependencies]
 
 [dev-dependencies]
-criterion = "0.8.2"
+criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]
 name = "apply"

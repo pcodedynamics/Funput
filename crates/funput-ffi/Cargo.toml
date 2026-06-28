@@ -14,7 +14,7 @@ funput-core = { path = "../funput-core" }
 funput-engine = { path = "../funput-engine" }
 
 [dev-dependencies]
-criterion = "0.8.2"
+criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]
 name = "latency"

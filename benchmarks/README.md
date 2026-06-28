@@ -20,6 +20,10 @@ cargo bench -p funput-engine --bench process_char   # full engine path (+ bounda
 cargo bench -p funput-ffi    --bench latency         # end-to-end across the C FFI
 ```
 
+Criterion writes an interactive HTML summary to
+`target/criterion/report/index.html`. Individual benchmark reports live under
+their corresponding directories in `target/criterion/`.
+
 | Metric | Result |
 |---|---|
 | Compose latency (core `apply`) | **~0.23 µs / keystroke** (Telex), ~0.22 µs (VNI) |

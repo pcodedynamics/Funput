@@ -89,8 +89,8 @@ pub const CASES: &[VniCase] = &[
     },
     VniCase {
         keys: "uo7",
-        output: "ươ",
-        label: "shape uo7",
+        output: "uơ",
+        label: "open rhyme uo7",
     },
     VniCase {
         keys: "tru7o7ng",

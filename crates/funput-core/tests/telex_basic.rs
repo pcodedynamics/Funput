@@ -26,7 +26,11 @@ fn telex_shape_basics() {
     assert_eq!(type_keys("ow"), "ơ");
     assert_eq!(type_keys("uw"), "ư");
     assert_eq!(type_keys("aw"), "ă");
-    assert_eq!(type_keys("uow"), "ươ");
+    assert_eq!(type_keys("uow"), "uơ");
+    assert_eq!(type_keys("uowr"), "uở");
+    assert_eq!(type_keys("thuowr"), "thuở");
+    assert_eq!(type_keys("thuowngf"), "thường");
+    assert_eq!(type_keys("quowis"), "quới");
 }
 
 #[test]

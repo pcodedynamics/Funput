@@ -122,7 +122,7 @@ VNI (mặc định `Traditional`):
 |----|---------|---------|
 | `a1` | `á` | tone |
 | `d9` | `đ` | stroke |
-| `uo7` | `ươ` | horn compound |
+| `uo7` | `uơ` | vần mở (`thuo73` → `thuở`) |
 | `hoa2` | `hòa` | đặt dấu (Traditional) |
 | `vie5t` | `việt` | `ie` → tonal `ê` |
 | `ngu7o7i2` | `người` | dấu trên `ơ` |
@@ -135,7 +135,7 @@ Telex:
 |----|---------|
 | `as` | `á` |
 | `dd` | `đ` |
-| `uow` | `ươ` |
+| `uow` | `uơ` (`thuowr` → `thuở`) |
 | `nuocws` | `nước` |
 | `hoaf` | `hòa` (Traditional) / `hoà` (Modern) |
 | `ass` | `a` (revert tone) |

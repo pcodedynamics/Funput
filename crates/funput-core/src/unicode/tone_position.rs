@@ -209,6 +209,7 @@ mod tests {
     #[test]
     fn tone_vowel_index_uo_horn_cluster() {
         assert_eq!(char_at("trương", trad("trương")), 'ơ');
+        assert_eq!(char_at("thuơ", trad("thuơ")), 'ơ');
     }
 
     #[test]

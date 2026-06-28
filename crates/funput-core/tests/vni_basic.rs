@@ -82,7 +82,11 @@ fn vni_shape_basic() {
 
 #[test]
 fn vni_shape_syllables() {
-    assert_eq!(support::type_keys(InputMethod::Vni, "uo7"), "ươ");
+    assert_eq!(support::type_keys(InputMethod::Vni, "uo7"), "uơ");
+    assert_eq!(support::type_keys(InputMethod::Vni, "uo73"), "uở");
+    assert_eq!(support::type_keys(InputMethod::Vni, "thuo73"), "thuở");
+    assert_eq!(support::type_keys(InputMethod::Vni, "thuo7ng2"), "thường");
+    assert_eq!(support::type_keys(InputMethod::Vni, "quo7i1"), "quới");
     assert_eq!(support::type_keys(InputMethod::Vni, "u7o7"), "ươ");
     assert_eq!(support::type_keys(InputMethod::Vni, "u7o7ng"), "ương");
     assert_eq!(support::type_keys(InputMethod::Vni, "tru7o7ng"), "trương");

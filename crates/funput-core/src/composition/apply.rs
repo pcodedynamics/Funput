@@ -69,9 +69,14 @@ pub(crate) fn shape_apply_target_exists(buffer: &str, shape: VowelShape) -> bool
     shape_target_index(buffer, shape).is_some()
 }
 
-/// Apply a vowel shape; horn turns an adjacent `uo` into the `ươ` compound.
+/// Apply a vowel shape. For an adjacent plain `uo`, initially horn only the `o`
+/// (`uơ`): that is the completed open rhyme in `thuở`/`huơ`/`quơ`. If another
+/// vowel or coda arrives, [`complete_uo_horn_for_continuation`] turns it into
+/// `ươ` (`thương`, `hươu`).
 pub(crate) fn apply_shape_key(buffer: &str, shape: VowelShape) -> TransformResult {
-    if shape == VowelShape::Horn && let Some(text) = apply_uo_compound(buffer) {
+    if shape == VowelShape::Horn
+        && let Some(text) = apply_uo_compound(buffer)
+    {
         return TransformResult {
             kind: TransformKind::Applied,
             text,
@@ -120,7 +125,54 @@ pub(crate) fn uo_pair_in_vowel_cluster(buffer: &str) -> Option<(usize, usize)> {
 fn apply_uo_compound(buffer: &str) -> Option<String> {
     let (u_idx, o_idx) = uo_pair_in_vowel_cluster(buffer)?;
     let mut chars: Vec<char> = buffer.chars().collect();
-    chars[u_idx] = apply_shape(chars[u_idx], VowelShape::Horn)?;
+    let has_continuation = o_idx + 1 < chars.len();
+    let is_qu_glide = u_idx > 0 && chars[u_idx - 1].eq_ignore_ascii_case(&'q');
+    if has_continuation && !is_qu_glide {
+        chars[u_idx] = apply_shape(chars[u_idx], VowelShape::Horn)?;
+    }
     chars[o_idx] = apply_shape(chars[o_idx], VowelShape::Horn)?;
     Some(chars.into_iter().collect())
+}
+
+/// Return the byte offset and character of the plain `u` when `buffer` ends in
+/// ambiguous `uơ` (including a tone on `ơ`), plus the character before `u`.
+/// The ASCII-byte guard makes the overwhelmingly common path constant-time.
+fn open_uo_horn_suffix(buffer: &str) -> Option<(usize, char, Option<char>)> {
+    if buffer.as_bytes().last().is_none_or(u8::is_ascii) {
+        return None;
+    }
+
+    let mut chars = buffer.char_indices().rev();
+    let (_, o) = chars.next()?;
+    let (u_offset, u) = chars.next()?;
+    let before_u = chars.next().map(|(_, ch)| ch);
+    let is_plain_u = vowel_stem(u).is_some_and(|stem| stem.eq_ignore_ascii_case(&'u'))
+        && crate::unicode::shapes::shape_on_vowel(u).is_none();
+    let is_horned_o = vowel_stem(o).is_some_and(|stem| stem.eq_ignore_ascii_case(&'ơ'));
+    (is_plain_u && is_horned_o).then_some((u_offset, u, before_u))
+}
+
+/// Complete an ambiguous open `uơ` as `ươ` once another character proves that
+/// the rhyme continues (`thuơ` + `n` → `thươn`, `huơ` + `u` → `hươu`). The `u`
+/// in a `qu` onset is a glide, not part of the nucleus, so `quơi` stays `quơi`.
+pub(crate) fn complete_uo_horn_for_continuation(buffer: &str, key: char) -> Option<String> {
+    let (u_offset, u, before_u) = open_uo_horn_suffix(buffer)?;
+    if before_u.is_some_and(|ch| ch.eq_ignore_ascii_case(&'q')) {
+        return None;
+    }
+
+    let shaped_u = apply_shape(u, VowelShape::Horn)?;
+    let after_u = u_offset + u.len_utf8();
+    let mut completed = String::with_capacity(buffer.len() + key.len_utf8() + 1);
+    completed.push_str(&buffer[..u_offset]);
+    completed.push(shaped_u);
+    completed.push_str(&buffer[after_u..]);
+    completed.push(key);
+    Some(completed)
+}
+
+/// Whether the buffer ends in the ambiguous open `uơ` form. A repeated horn key
+/// must revert this form (`uo77` → `uo7`) rather than horn the remaining `u`.
+pub(crate) fn ends_with_open_uo_horn(buffer: &str) -> bool {
+    open_uo_horn_suffix(buffer).is_some()
 }

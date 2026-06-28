@@ -40,8 +40,8 @@ pub const CASES: &[TelexCase] = &[
     },
     TelexCase {
         keys: "uow",
-        output: "ươ",
-        label: "shape uow",
+        output: "uơ",
+        label: "open rhyme uow",
     },
     TelexCase {
         keys: "hoaf",

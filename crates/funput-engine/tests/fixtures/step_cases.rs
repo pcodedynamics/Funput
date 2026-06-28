@@ -149,8 +149,8 @@ pub const TELEX_BUFFER_CASES: &[BufferCase] = &[
     BufferCase {
         method: InputMethod::Telex,
         keys: "uow",
-        output: "ươ",
-        label: "shape uow",
+        output: "uơ",
+        label: "open rhyme uow",
     },
     BufferCase {
         method: InputMethod::Telex,
@@ -290,8 +290,8 @@ pub const VNI_BUFFER_CASES: &[BufferCase] = &[
     BufferCase {
         method: InputMethod::Vni,
         keys: "uo7",
-        output: "ươ",
-        label: "shape uo7",
+        output: "uơ",
+        label: "open rhyme uo7",
     },
     BufferCase {
         method: InputMethod::Vni,

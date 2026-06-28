@@ -3,7 +3,8 @@
 //! [`apply_action`] is method-agnostic; only the input-method classifier differs.
 
 use crate::composition::apply::{
-    apply_shape_key, apply_stroke, apply_tone_key, remove_tone, shape_apply_target_exists,
+    apply_shape_key, apply_stroke, apply_tone_key, complete_uo_horn_for_continuation,
+    ends_with_open_uo_horn, remove_tone, shape_apply_target_exists,
 };
 use crate::composition::revert::{try_revert_shape, try_revert_stroke, try_revert_tone};
 use crate::input_method::telex;
@@ -112,6 +113,12 @@ pub(crate) fn apply_action(
             spell_check_gate(buffer, key, spell_check, result)
         }
         KeyAction::Shape(shape) => {
+            if shape == crate::unicode::shapes::VowelShape::Horn
+                && ends_with_open_uo_horn(buffer)
+                && let Some(text) = try_revert_shape(buffer, shape)
+            {
+                return reverted(format!("{text}{key}"));
+            }
             // Apply takes priority when an unshaped target exists, so the second
             // horn in `u7o7` shapes the `o` (→ `ươ`) instead of reverting the
             // earlier `ư`. Revert only fires when there is no target to apply to
@@ -141,15 +148,28 @@ pub(crate) fn apply_action(
             },
         },
         KeyAction::Normal => {
-            let text = format!("{buffer}{key}");
-            match reposition_existing_tone(&text, style) {
+            if let Some(completed) = complete_uo_horn_for_continuation(buffer, key) {
+                return match reposition_existing_tone(&completed, style) {
+                    Some(repositioned) => TransformResult {
+                        kind: TransformKind::Applied,
+                        text: repositioned,
+                    },
+                    None => TransformResult {
+                        kind: TransformKind::Applied,
+                        text: completed,
+                    },
+                };
+            }
+
+            let appended = format!("{buffer}{key}");
+            match reposition_existing_tone(&appended, style) {
                 Some(repositioned) => TransformResult {
                     kind: TransformKind::Applied,
                     text: repositioned,
                 },
                 None => TransformResult {
                     kind: TransformKind::Pending,
-                    text,
+                    text: appended,
                 },
             }
         }
@@ -240,7 +260,7 @@ mod tests {
         assert_eq!(av("a", '6').text, "â");
         assert_eq!(av("o", '7').text, "ơ");
         assert_eq!(av("a", '8').text, "ă");
-        assert_eq!(av("uo", '7').text, "ươ");
+        assert_eq!(av("uo", '7').text, "uơ");
     }
 
     #[test]
