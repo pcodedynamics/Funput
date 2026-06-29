@@ -6,7 +6,7 @@ use slint::{ComponentHandle, Model};
 
 use super::{models, settings_window};
 use crate::compose::FieldComposer;
-use crate::settings::{Hotkey, Method, ToneStyle};
+use crate::settings::{FlipHotkey, Hotkey, Method, ToneStyle};
 use crate::{commands, shell, Compose, SettingsWindow};
 
 thread_local! {
@@ -42,6 +42,17 @@ pub(super) fn wire(window: &SettingsWindow) {
             if let Some(window) = weak.upgrade() {
                 window.set_hotkey(value);
                 window.set_hotkey_caps(models::caps(hotkey));
+            }
+        }
+    });
+
+    let weak = window.as_weak();
+    window.on_pick_flip_hotkey(move |value| {
+        if let Some(hotkey) = FlipHotkey::from_id(&value) {
+            commands::set_flip_hotkey(hotkey);
+            if let Some(window) = weak.upgrade() {
+                window.set_flip_hotkey(value);
+                window.set_flip_hotkey_caps(models::flip_caps(hotkey));
             }
         }
     });

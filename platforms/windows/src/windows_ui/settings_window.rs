@@ -36,6 +36,8 @@ fn populate(window: &SettingsWindow) {
     window.set_tone_style(settings.tone_style.id().into());
     window.set_hotkey(settings.toggle_hotkey.id().into());
     window.set_hotkey_caps(models::caps(settings.toggle_hotkey));
+    window.set_flip_hotkey(settings.flip_hotkey.id().into());
+    window.set_flip_hotkey_caps(models::flip_caps(settings.flip_hotkey));
     window.set_smart_restore(settings.smart_restore);
     window.set_eager_restore(settings.eager_restore);
     window.set_spell_check(settings.spell_check);

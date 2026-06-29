@@ -16,6 +16,7 @@
 
 mod boundary;
 mod diff;
+mod flip;
 mod pipeline;
 mod result;
 mod session;
@@ -169,6 +170,31 @@ impl Engine {
         ImeResult::none()
     }
 
+    /// Flip the word being composed between its Vietnamese form and its raw
+    /// keystrokes (`card` ⇄ `cải`), and back on a second call. Returns the
+    /// delete+inject instruction ([`Action::Send`]) for hosts that type real text,
+    /// or [`Action::None`] when there is nothing to flip: no live composition, or
+    /// the word has no Vietnamese/raw distinction (`the`). Hosts that show marked
+    /// text can ignore the payload and re-render [`Self::buffer`].
+    ///
+    /// The choice is sticky: further keystrokes keep the chosen form and the word
+    /// boundary won't English-restore it back.
+    pub fn flip_composing(&mut self) -> ImeResult {
+        match flip::flip(
+            &self.session.buffer,
+            &self.session.keys,
+            &self.session.vn_form,
+        ) {
+            Some((new_buffer, override_)) => {
+                let (backspace, output) = diff::diff(&self.session.buffer, &new_buffer);
+                self.session.buffer = new_buffer;
+                self.session.restore_override = Some(override_);
+                ImeResult::send(backspace, output)
+            }
+            None => ImeResult::none(),
+        }
+    }
+
     /// Process one Unicode scalar (platform maps keycode → char).
     ///
     /// # Behavior
@@ -235,7 +261,10 @@ mod tests {
     fn engine_struct_size() {
         let bytes = std::mem::size_of::<Engine>();
         println!("size_of::<Engine>() = {bytes} bytes");
-        assert!(bytes < 1024, "engine struct unexpectedly large: {bytes} bytes");
+        assert!(
+            bytes < 1024,
+            "engine struct unexpectedly large: {bytes} bytes"
+        );
     }
 
     #[test]
@@ -480,5 +509,81 @@ mod tests {
         assert_eq!(engine.keys(), "a");
         engine.process_char(' ');
         assert_eq!(engine.keys(), "");
+    }
+
+    #[test]
+    fn flip_eager_restored_word_to_vietnamese_and_back() {
+        // "card" eager-restores to English mid-word (shown as "card"). Flipping
+        // recovers the Vietnamese composition; flipping again returns to raw.
+        let mut engine = Engine::new();
+        type_word(&mut engine, "card");
+        assert_eq!(engine.buffer(), "card"); // shown as raw English
+
+        // Flip → a Send that rewrites the visible word to the Vietnamese form.
+        let to_vn = engine.flip_composing();
+        assert_eq!(to_vn.action, Action::Send);
+        let vn = engine.buffer().to_string();
+        assert_ne!(vn, "card");
+        // The diff applied to "card" must reproduce the new buffer.
+        assert_eq!(apply_diff("card", &to_vn), vn);
+
+        let to_raw = engine.flip_composing();
+        assert_eq!(to_raw.action, Action::Send);
+        assert_eq!(engine.buffer(), "card"); // back to raw
+        assert_eq!(apply_diff(&vn, &to_raw), "card");
+    }
+
+    /// Apply a `Send` result's `backspace`/`output` to `shown` — what a host that
+    /// types real text (Windows) would end up displaying.
+    fn apply_diff(shown: &str, result: &ImeResult) -> String {
+        let mut chars: Vec<char> = shown.chars().collect();
+        chars.truncate(chars.len() - result.backspace);
+        chars.into_iter().chain(result.output.chars()).collect()
+    }
+
+    #[test]
+    fn flip_to_vietnamese_sticks_across_word_boundary() {
+        // After flipping "card" to Vietnamese, Space must not restore it to English.
+        let mut engine = Engine::new();
+        type_word(&mut engine, "card");
+        engine.flip_composing();
+        let vn = engine.buffer().to_string();
+
+        let boundary = engine.process_char(' ');
+        // No restore fired (the flip is sticky), so the boundary just passes through.
+        assert_eq!(boundary.action, Action::None);
+        // The next composition starts clean.
+        assert_eq!(engine.buffer(), "");
+        assert_ne!(vn, "card");
+    }
+
+    #[test]
+    fn flip_kept_vietnamese_word_to_raw() {
+        // "má" is valid Vietnamese; flipping shows the raw keys "mas".
+        let mut engine = Engine::new();
+        type_word(&mut engine, "mas");
+        assert_eq!(engine.buffer(), "má");
+        assert_eq!(engine.flip_composing().action, Action::Send);
+        assert_eq!(engine.buffer(), "mas");
+    }
+
+    #[test]
+    fn flip_is_noop_without_a_flippable_word() {
+        let mut engine = Engine::new();
+        assert_eq!(engine.flip_composing().action, Action::None); // nothing composing
+        type_word(&mut engine, "the"); // composes to itself — no VN/raw distinction
+        assert_eq!(engine.flip_composing().action, Action::None);
+        assert_eq!(engine.buffer(), "the");
+    }
+
+    #[test]
+    fn flip_choice_resets_after_the_word_commits() {
+        // The override is per-word: a fresh word restores normally again.
+        let mut engine = Engine::new();
+        type_word(&mut engine, "card");
+        engine.flip_composing(); // force Vietnamese
+        engine.process_char(' '); // commit + clear
+        type_word(&mut engine, "card"); // a new word
+        assert_eq!(engine.buffer(), "card"); // eager-restored again, override gone
     }
 }

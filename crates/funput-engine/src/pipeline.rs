@@ -1,8 +1,9 @@
 //! Key → funput-core → ImeResult orchestration.
 
-use funput_core::{apply_checked, is_definitely_invalid, TransformKind};
+use funput_core::{TransformKind, apply_checked, is_definitely_invalid};
 
 use crate::diff::diff;
+use crate::flip::RestoreOverride;
 use crate::result::ImeResult;
 use crate::session::Session;
 
@@ -24,19 +25,31 @@ pub(crate) fn process(session: &mut Session, key: char) -> ImeResult {
         _ => result.text,
     };
 
-    // Eager English restore: flip to the raw keystrokes the instant the word can
-    // no longer be Vietnamese (`tẽt` → `text` on the closing `t`). Gated by the
-    // smart + eager toggles. Skip on Reverted (a deliberate user restore) and when
-    // nothing was transformed (`keys == composed`, e.g. a literal digit `ng1`).
-    let new_buffer = if session.smart_restore
-        && session.eager_restore
-        && result.kind != TransformKind::Reverted
-        && session.keys != composed
-        && is_definitely_invalid(&composed)
-    {
-        session.keys.clone()
-    } else {
-        composed
+    // Remember the Vietnamese composition before an eager restore can collapse the
+    // buffer to raw keys, so the flip hotkey can recover it after a restore.
+    session.vn_form = composed.clone();
+
+    // A manual flip pins which form is displayed for the rest of the word, overriding
+    // the automatic restore decision below.
+    let new_buffer = match session.restore_override {
+        Some(RestoreOverride::ForceVietnamese) => composed,
+        Some(RestoreOverride::ForceRaw) => session.keys.clone(),
+        // Eager English restore: flip to the raw keystrokes the instant the word can
+        // no longer be Vietnamese (`tẽt` → `text` on the closing `t`). Gated by the
+        // smart + eager toggles. Skip on Reverted (a deliberate user restore) and when
+        // nothing was transformed (`keys == composed`, e.g. a literal digit `ng1`).
+        None => {
+            if session.smart_restore
+                && session.eager_restore
+                && result.kind != TransformKind::Reverted
+                && session.keys != composed
+                && is_definitely_invalid(&composed)
+            {
+                session.keys.clone()
+            } else {
+                composed
+            }
+        }
     };
 
     let (backspace, output) = diff(&session.buffer, &new_buffer);

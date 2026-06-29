@@ -17,6 +17,9 @@ namespace funput {
 enum class Method : uint8_t { Telex = 0, Vni = 1 };
 enum class ToneStyle : uint8_t { Traditional = 0, Modern = 1 };
 enum class Hotkey { CtrlBacktick, CtrlSpace, AltShift };
+// Hotkey to flip the word being composed VN↔raw. Presets use Ctrl+Shift+<letter>;
+// Off disables it.
+enum class FlipHotkey { Off, CtrlShiftZ, CtrlShiftX };
 
 struct Settings {
     Method method = Method::Vni;
@@ -31,6 +34,7 @@ struct Settings {
     // a sentence. Off by default.
     bool autoCapitalize = false;
     Hotkey toggleHotkey = Hotkey::CtrlBacktick;
+    FlipHotkey flipHotkey = FlipHotkey::Off;
     // App identifiers (fcitx5 program() / WM_CLASS) that default to English on
     // focus. Owned by the Settings UI; the addon only reads them for matching.
     std::vector<std::string> excludedAppIds;

@@ -21,7 +21,7 @@ mod types;
 use funput_core::{InputMethod, ToneStyle};
 use funput_engine::Engine;
 
-pub use types::{FunputResult, ACTION_NONE, ACTION_RESTORE, ACTION_SEND, CHARS_CAP};
+pub use types::{ACTION_NONE, ACTION_RESTORE, ACTION_SEND, CHARS_CAP, FunputResult};
 
 const METHOD_VNI: u8 = 1;
 const TONE_STYLE_MODERN: u8 = 1;
@@ -288,4 +288,33 @@ pub unsafe extern "C" fn funput_backspace(engine: *mut FunputEngine) -> FunputRe
         return FunputResult::none();
     };
     FunputResult::from_ime(&engine.inner.on_backspace())
+}
+
+/// Flip the word being composed between its Vietnamese form and its raw keystrokes
+/// (`card` ⇄ `cải`), and back on a second call. Returns the delete+inject the host
+/// should apply (`ACTION_SEND`), or [`FunputResult::none`] when there is nothing to
+/// flip. Hosts that show marked text can ignore the payload and re-render
+/// [`funput_buffer`] after a non-`ACTION_NONE` result.
+///
+/// # Safety
+/// `engine` must be a valid handle or null.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn funput_flip_composing(engine: *mut FunputEngine) -> FunputResult {
+    let Some(engine) = (unsafe { engine.as_mut() }) else {
+        return FunputResult::none();
+    };
+    FunputResult::from_ime(&engine.inner.flip_composing())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn flip_composing_on_fresh_engine_is_noop() {
+        let engine = funput_engine_new();
+        let result = unsafe { funput_flip_composing(engine) };
+        assert_eq!(result.action, ACTION_NONE); // nothing composing
+        unsafe { funput_engine_free(engine) };
+    }
 }

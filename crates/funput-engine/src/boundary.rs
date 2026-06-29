@@ -2,6 +2,7 @@
 
 use funput_core::is_complete_syllable;
 
+use crate::flip::RestoreOverride;
 use crate::result::ImeResult;
 use crate::session::Session;
 
@@ -24,6 +25,10 @@ pub(crate) fn is_word_boundary(key: char) -> bool {
 /// reverted (see [`keystrokes_intend_vietnamese`]) — that keeps abbreviations like
 /// `GĐ`, `QĐ`, `đc` instead of exposing `GDD` / `d9c`.
 pub(crate) fn should_restore(session: &Session) -> bool {
+    // A manual flip to Vietnamese pins the word — never restore it back.
+    if session.restore_override == Some(RestoreOverride::ForceVietnamese) {
+        return false;
+    }
     session.smart_restore
         && !session.buffer.is_empty()
         && session.keys != session.buffer
@@ -38,8 +43,7 @@ pub(crate) fn should_restore(session: &Session) -> bool {
 /// - a digit in the raw keys — a VNI tone/shape modifier (`d9c` → `đc`, `to1` → `tó`)
 ///   that a revert would surface.
 fn keystrokes_intend_vietnamese(session: &Session) -> bool {
-    session.buffer.contains(['đ', 'Đ'])
-        || session.keys.contains(|c: char| c.is_ascii_digit())
+    session.buffer.contains(['đ', 'Đ']) || session.keys.contains(|c: char| c.is_ascii_digit())
 }
 
 fn english_restore_result(session: &Session, boundary_key: char) -> ImeResult {
@@ -141,6 +145,8 @@ mod tests {
             cap_sentence_ended: false,
             cap_armed: false,
             shortcuts: HashMap::new(),
+            vn_form: String::new(),
+            restore_override: None,
         };
         assert!(should_restore(&session));
     }
@@ -160,6 +166,8 @@ mod tests {
             cap_sentence_ended: false,
             cap_armed: false,
             shortcuts: HashMap::new(),
+            vn_form: String::new(),
+            restore_override: None,
         };
         assert!(!should_restore(&session));
     }
@@ -179,6 +187,8 @@ mod tests {
             cap_sentence_ended: false,
             cap_armed: false,
             shortcuts: HashMap::new(),
+            vn_form: String::new(),
+            restore_override: None,
         };
         assert!(!should_restore(&session));
     }
@@ -205,6 +215,8 @@ mod tests {
             cap_sentence_ended: false,
             cap_armed: false,
             shortcuts: HashMap::new(),
+            vn_form: String::new(),
+            restore_override: None,
         };
         assert!(!should_restore(&session));
     }
@@ -225,6 +237,8 @@ mod tests {
             cap_sentence_ended: false,
             cap_armed: false,
             shortcuts: HashMap::new(),
+            vn_form: String::new(),
+            restore_override: None,
         };
         assert!(!should_restore(&session));
     }
@@ -244,6 +258,8 @@ mod tests {
             cap_sentence_ended: false,
             cap_armed: false,
             shortcuts: HashMap::new(),
+            vn_form: String::new(),
+            restore_override: None,
         };
         let result = on_word_boundary(&mut session, ' ');
         assert_eq!(result.action, Action::Send);
@@ -268,6 +284,8 @@ mod tests {
             cap_sentence_ended: false,
             cap_armed: false,
             shortcuts: HashMap::new(),
+            vn_form: String::new(),
+            restore_override: None,
         };
         let result = on_word_boundary(&mut session, ' ');
         assert_eq!(result.action, Action::None);
@@ -335,5 +353,15 @@ mod tests {
         session.shortcuts.insert("kg".into(), "không".into());
         let result = on_word_boundary(&mut session, ',');
         assert_eq!(result.output, "không,");
+    }
+
+    #[test]
+    fn force_vietnamese_override_suppresses_restore() {
+        // A word flipped to Vietnamese must not be English-restored at the boundary.
+        let mut session = Session::new();
+        session.buffer.push_str("cải");
+        session.keys.push_str("caix");
+        session.restore_override = Some(RestoreOverride::ForceVietnamese);
+        assert!(!should_restore(&session));
     }
 }

@@ -117,6 +117,10 @@ public:
     FunputResult process(uint32_t codepoint) { return funput_process_char(engine_, codepoint); }
     FunputResult backspace() { return funput_backspace(engine_); }
 
+    // Flip the word being composed between its Vietnamese form and its raw keys.
+    // Preedit shells re-render buffer() when the action is not ACTION_NONE.
+    FunputResult flipComposing() { return funput_flip_composing(engine_); }
+
     // The composed (marked/underlined) buffer as UTF-8.
     std::string buffer() const {
         uint32_t cps[CHARS_CAP];

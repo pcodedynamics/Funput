@@ -45,24 +45,3 @@ enum ToneStyle: Int, CaseIterable, Identifiable, Codable {
         }
     }
 }
-
-/// Hotkey that switches between Vietnamese and English (pass-through) typing.
-enum ToggleShortcut: String, CaseIterable, Identifiable, Codable {
-    case controlBackslash
-    case controlSpace
-    case rightCommand
-    case rightOption
-
-    var id: String { rawValue }
-
-    var keyCaps: [String] {
-        switch self {
-        case .controlBackslash: ["⌃", "\\"]
-        case .controlSpace: ["⌃", "Space"]
-        case .rightCommand: ["⌘", "(phải)"]
-        case .rightOption: ["⌥", "(phải)"]
-        }
-    }
-
-    var label: String { keyCaps.joined(separator: " ") }
-}

@@ -4,7 +4,7 @@
 
 use std::sync::Mutex;
 
-use crate::settings::{ExcludedApp, Hotkey, Method, ToneStyle};
+use crate::settings::{ExcludedApp, FlipHotkey, Hotkey, Method, ToneStyle};
 use crate::update::{self, Manifest};
 use crate::{shell, windows_ui};
 
@@ -34,6 +34,10 @@ pub fn set_auto_capitalize(on: bool) {
 
 pub fn set_toggle_hotkey(hotkey: Hotkey) {
     shell::set_toggle_hotkey(hotkey);
+}
+
+pub fn set_flip_hotkey(hotkey: FlipHotkey) {
+    shell::set_flip_hotkey(hotkey);
 }
 
 pub fn complete_onboarding() {

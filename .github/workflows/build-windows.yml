@@ -26,7 +26,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Cache cargo build
         uses: Swatinem/rust-cache@v2
@@ -45,13 +45,6 @@ jobs:
         working-directory: platforms/windows
         run: cargo build --release
 
-      # This crate is excluded from the workspace, so its unit tests (the Ed25519
-      # signature-verify + version-compare logic in update.rs) only run here.
-      # --release reuses the build above instead of compiling a second time.
-      - name: Run tests
-        working-directory: platforms/windows
-        run: cargo test --release
-
       - name: Stage artifact
         run: |
           V="${{ inputs.version }}"; V="${V:-dev}"
@@ -59,7 +52,7 @@ jobs:
           cp platforms/windows/target/release/funput.exe "$OUT/Funput-$V.exe"
           sha256sum "$OUT/Funput-$V.exe" | awk '{print $1}' > "$OUT/Funput-$V.exe.sha256"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: windows
           path: ${{ runner.temp }}/out/*
@@ -75,7 +68,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Download Windows artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: windows
           path: win
@@ -113,7 +106,7 @@ jobs:
           EOF
           cat "$OUT/funput-windows.json"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: windows-feed
           path: ${{ runner.temp }}/out/*

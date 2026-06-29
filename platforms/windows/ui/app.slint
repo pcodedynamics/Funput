@@ -30,6 +30,8 @@ export component SettingsWindow inherits Window {
     in property <string> tone-style;
     in property <string> hotkey;
     in property <[string]> hotkey-caps;
+    in property <string> flip-hotkey;
+    in property <[string]> flip-hotkey-caps;
     in-out property <bool> smart-restore;
     in-out property <bool> eager-restore;
     in-out property <bool> spell-check;
@@ -48,6 +50,7 @@ export component SettingsWindow inherits Window {
     callback pick-method(string);
     callback pick-tone(string);
     callback pick-hotkey(string);
+    callback pick-flip-hotkey(string);
     callback set-smart(bool);
     callback set-eager(bool);
     callback set-spell(bool);
@@ -153,7 +156,10 @@ export component SettingsWindow inherits Window {
                 if root.active == "keyboard": KeyboardPage {
                     hotkey: root.hotkey;
                     hotkey-caps: root.hotkey-caps;
+                    flip-hotkey: root.flip-hotkey;
+                    flip-hotkey-caps: root.flip-hotkey-caps;
                     pick-hotkey(v) => { root.pick-hotkey(v); }
+                    pick-flip-hotkey(v) => { root.pick-flip-hotkey(v); }
                 }
 
                 if root.active == "smart": SmartPage {

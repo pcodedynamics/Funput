@@ -16,10 +16,6 @@ final class FunputInputController: IMKInputController {
 
     private enum KeyCode {
         static let backspace: UInt16 = 51
-        static let backslash: UInt16 = 42
-        static let space: UInt16 = 49
-        static let rightCommand: UInt16 = 54
-        static let rightOption: UInt16 = 61
     }
 
     private static let notFound = NSRange(location: NSNotFound, length: 0)
@@ -29,25 +25,19 @@ final class FunputInputController: IMKInputController {
         syncSettings()
     }
 
-    /// Also receive flagsChanged so right-Command / right-Option can toggle.
     override func recognizedEvents(_ sender: Any!) -> Int {
-        Int(NSEvent.EventTypeMask.keyDown.rawValue | NSEvent.EventTypeMask.flagsChanged.rawValue)
+        Int(NSEvent.EventTypeMask.keyDown.rawValue)
     }
 
     // MARK: - Event entry point
 
     override func handle(_ event: NSEvent!, client sender: Any!) -> Bool {
         guard let event, let client = sender as? IMKTextInput else { return false }
-
-        if event.type == .flagsChanged {
-            if matchesModifierToggle(event) { toggleEnabled() }
-            return false
-        }
         guard event.type == .keyDown else { return false }
 
         syncSettings()
 
-        if matchesComboToggle(event) {
+        if AppSettings.shared.toggleShortcut.matches(event) {
             toggleEnabled()
             return true
         }
@@ -55,6 +45,14 @@ final class FunputInputController: IMKInputController {
         // English mode: pass everything straight through to the app. The VI/EN state
         // is set per-app on focus change (see `activateServer`) and can be toggled.
         guard AppSettings.shared.vietnameseEnabled else { return false }
+
+        // Flip the word being composed between Vietnamese and raw keys. Handled in
+        // Vietnamese mode, before the Control-combo passthrough, so the hotkey isn't
+        // swallowed in English mode (e.g. ⌃⇧Z stays Redo there).
+        if matchesFlipShortcut(event) {
+            flipComposing(client)
+            return true
+        }
 
         // Keyboard shortcuts (⌘C, ⌃A, …) are not text: end composition and let
         // the app handle them. Control/Command combos carry control characters in
@@ -165,6 +163,14 @@ final class FunputInputController: IMKInputController {
         return true
     }
 
+    /// Flip the word being composed between Vietnamese and raw keys. It is still
+    /// marked (uncommitted) text, so we just re-render it — works in every app,
+    /// unlike editing already-committed text.
+    private func flipComposing(_ client: IMKTextInput) {
+        guard composer.flipComposing().action != ACTION_NONE else { return } // nothing to flip
+        setMarked(composer.buffer(), client)
+    }
+
     // MARK: - Toggle Vietnamese / English
 
     private func toggleEnabled() {
@@ -173,26 +179,8 @@ final class FunputInputController: IMKInputController {
         composer.setEnabled(settings.vietnameseEnabled)
     }
 
-    private func matchesComboToggle(_ event: NSEvent) -> Bool {
-        switch AppSettings.shared.toggleShortcut {
-        case .controlBackslash:
-            return event.modifierFlags.contains(.control) && event.keyCode == KeyCode.backslash
-        case .controlSpace:
-            return event.modifierFlags.contains(.control) && event.keyCode == KeyCode.space
-        case .rightCommand, .rightOption:
-            return false
-        }
-    }
-
-    private func matchesModifierToggle(_ event: NSEvent) -> Bool {
-        switch AppSettings.shared.toggleShortcut {
-        case .rightCommand:
-            return event.keyCode == KeyCode.rightCommand && event.modifierFlags.contains(.command)
-        case .rightOption:
-            return event.keyCode == KeyCode.rightOption && event.modifierFlags.contains(.option)
-        case .controlBackslash, .controlSpace:
-            return false
-        }
+    private func matchesFlipShortcut(_ event: NSEvent) -> Bool {
+        AppSettings.shared.flipShortcut?.matches(event) ?? false
     }
 
     // MARK: - Helpers

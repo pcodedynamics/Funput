@@ -13,7 +13,7 @@ struct StatusMenu: View {
         Toggle(isOn: $settings.vietnameseEnabled) {
             Text(settings.vietnameseEnabled ? "Tiếng Việt (đang bật)" : "Tiếng Việt (đang tắt)")
         }
-        .keyboardShortcut("\\", modifiers: .control)
+        .keyboardShortcut(settings.toggleShortcut.keyboardShortcut)
 
         Divider()
 

@@ -10,7 +10,7 @@ use windows::Win32::UI::Input::KeyboardAndMouse::{
 };
 use windows::Win32::UI::WindowsAndMessaging::KBDLLHOOKSTRUCT;
 
-use crate::settings::Hotkey;
+use crate::settings::{FlipHotkey, Hotkey};
 
 fn async_down(vk: VIRTUAL_KEY) -> bool {
     (unsafe { GetAsyncKeyState(vk.0 as i32) } as u16 & 0x8000) != 0
@@ -33,6 +33,17 @@ pub fn is_toggle(vk: VIRTUAL_KEY, mods: Mods, hotkey: Hotkey) -> bool {
         Hotkey::CtrlSpace => mods.ctrl && !mods.alt && !mods.win && vk == VK_SPACE,
         // Modifier-only combo: fires on the second modifier's keydown.
         Hotkey::AltShift => mods.alt && mods.shift && (vk == VK_SHIFT || vk == VK_MENU),
+    }
+}
+
+/// Whether this keydown matches the configured flip hotkey. Letter virtual-keys are
+/// their ASCII uppercase codes (`Z` = 0x5A, `X` = 0x58).
+pub fn is_flip(vk: VIRTUAL_KEY, mods: Mods, hotkey: FlipHotkey) -> bool {
+    let ctrl_shift = mods.ctrl && mods.shift && !mods.alt && !mods.win;
+    match hotkey {
+        FlipHotkey::Off => false,
+        FlipHotkey::CtrlShiftZ => ctrl_shift && vk.0 == 0x5A,
+        FlipHotkey::CtrlShiftX => ctrl_shift && vk.0 == 0x58,
     }
 }
 

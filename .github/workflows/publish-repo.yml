@@ -79,7 +79,7 @@ jobs:
           # Public key users import to trust the repo.
           gpg --armor --export hello@funput.app > funput.asc
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: apt-tree
           path: tree/deb
@@ -137,7 +137,7 @@ jobs:
             --detach-sign --armor tree/rpm/repodata/repomd.xml
           rm -f "$HOME/.gpg-pass"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: rpm-tree
           path: tree/rpm
@@ -150,11 +150,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with: { name: apt-tree, path: public/deb }
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with: { name: rpm-tree, path: public/rpm }
 
       - name: Assemble site (index, .repo, public key)

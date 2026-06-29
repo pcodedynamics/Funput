@@ -6,7 +6,10 @@ import { Theme, Card, Row, Segmented, KeyCap } from "theme.slint";
 export component KeyboardPage inherits VerticalLayout {
     in property <string> hotkey;
     in property <[string]> hotkey-caps;
+    in property <string> flip-hotkey;
+    in property <[string]> flip-hotkey-caps;
     callback pick-hotkey(string);
+    callback pick-flip-hotkey(string);
 
     spacing: Theme.sp-md;
     Text { text: "Phím chuyển VI / EN"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
@@ -30,6 +33,31 @@ export component KeyboardPage inherits VerticalLayout {
             HorizontalLayout {
                 spacing: Theme.sp-xs;
                 for cap in root.hotkey-caps: KeyCap { label: cap; }
+            }
+        }
+    }
+
+    Text { text: "Phím lật từ vừa gõ"; font-size: 20px; font-weight: 700; color: Palette.foreground; }
+    Card {
+        Row {
+            title: "Phím tắt";
+            subtitle: "Đổi từ đang gõ giữa tiếng Việt và chữ gốc (card ⇄ cải).";
+            Segmented {
+                options: [
+                    { id: "off", label: "Tắt" },
+                    { id: "ctrl_shift_z", label: "Ctrl Shift Z" },
+                    { id: "ctrl_shift_x", label: "Ctrl Shift X" },
+                ];
+                current: root.flip-hotkey;
+                changed(v) => { root.pick-flip-hotkey(v); }
+            }
+        }
+        Rectangle { height: 1px; background: Palette.border; }
+        Row {
+            title: "Đang dùng";
+            HorizontalLayout {
+                spacing: Theme.sp-xs;
+                for cap in root.flip-hotkey-caps: KeyCap { label: cap; }
             }
         }
     }

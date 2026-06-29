@@ -223,6 +223,20 @@ fn handle_keydown(kbd: &KBDLLHOOKSTRUCT) -> bool {
         return false;
     }
 
+    // Flip the word being composed VN↔raw. Same inject path as composing; swallow
+    // the hotkey even on a no-op so it never leaks to the app.
+    if keymap::is_flip(vk, mods, shell::flip_hotkey()) {
+        let plan = plan_inject(&shell::flip_composing());
+        if !plan.is_noop() {
+            if shell::foreground_is_chrome() {
+                inject::send_plan_chrome(&plan);
+            } else {
+                inject::send_plan(&plan);
+            }
+        }
+        return true;
+    }
+
     match classify(&keymap::to_key_event(kbd)) {
         KeyKind::Compose(c) => {
             let plan = plan_inject(&shell::process_char(c));

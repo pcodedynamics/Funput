@@ -21,10 +21,7 @@ struct OnboardingView: View {
     @ViewBuilder private var content: some View {
         switch step {
         case 0:
-            OnboardingStep(icon: "character.bubble.fill", title: "Chào mừng đến Funput",
-                           subtitle: "Gõ tiếng Việt ở mọi nơi trên máy Mac — miễn phí, mã nguồn mở.") {
-                EmptyView()
-            }
+            welcomeStep
         case 1:
             EnableInputSourceStep()
         case 2:
@@ -35,6 +32,25 @@ struct OnboardingView: View {
                 EmptyView()
             }
         }
+    }
+
+    /// First step — leads with the Funput logo to anchor the brand.
+    private var welcomeStep: some View {
+        VStack(spacing: Theme.Spacing.lg) {
+            Spacer(minLength: 0)
+            AppLogo(size: 104)
+            VStack(spacing: Theme.Spacing.sm) {
+                Text("Chào mừng đến Funput")
+                    .font(.largeTitle.bold())
+                Text("Gõ tiếng Việt ở mọi nơi trên máy Mac — miễn phí, mã nguồn mở.")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: 440)
+        .frame(maxWidth: .infinity)
     }
 
     private var methodStep: some View {

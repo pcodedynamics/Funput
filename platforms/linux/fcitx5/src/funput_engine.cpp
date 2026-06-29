@@ -182,6 +182,20 @@ bool FunputEngine::matchesToggle(const fcitx::Key &key) const {
     return false;
 }
 
+bool FunputEngine::matchesFlip(const fcitx::Key &key) const {
+    const auto st = key.states();
+    if (!st.test(fcitx::KeyState::Ctrl) || !st.test(fcitx::KeyState::Shift)) return false;
+    switch (settings_.flipHotkey) {
+    case funput::FlipHotkey::CtrlShiftZ:
+        return key.sym() == FcitxKey_z || key.sym() == FcitxKey_Z;
+    case funput::FlipHotkey::CtrlShiftX:
+        return key.sym() == FcitxKey_x || key.sym() == FcitxKey_X;
+    case funput::FlipHotkey::Off:
+        return false;
+    }
+    return false;
+}
+
 void FunputEngine::toggleEnabled(fcitx::InputContext *ic) {
     commitBuffer(ic); // commit any in-progress word first
     effectiveEnabled_ = !effectiveEnabled_;
@@ -203,6 +217,14 @@ void FunputEngine::keyEvent(const fcitx::InputMethodEntry &, fcitx::KeyEvent &ke
     }
 
     if (!effectiveEnabled_) return; // English mode: pass everything through
+
+    // Flip the word being composed VN↔raw. Checked before the Ctrl-combo guard
+    // below (the flip combo holds Ctrl) and re-renders the preedit in place.
+    if (matchesFlip(key)) {
+        if (handle_.flipComposing().action != ACTION_NONE) updatePreedit(ic);
+        keyEvent.filterAndAccept();
+        return;
+    }
 
     // Keyboard shortcuts (Ctrl/Alt/Super combos) are not text: end composition and
     // let the app handle them.

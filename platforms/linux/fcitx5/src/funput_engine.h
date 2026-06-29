@@ -38,6 +38,7 @@ private:
     void commitBuffer(fcitx::InputContext *ic);   // commit buffer(), end composition
     bool handleBoundary(fcitx::InputContext *ic, char32_t scalar);
     bool matchesToggle(const fcitx::Key &key) const;
+    bool matchesFlip(const fcitx::Key &key) const;
     void toggleEnabled(fcitx::InputContext *ic);
     // Per-app auto-switch (mirrors the macOS shell): excluded apps default to
     // English on focus, every other app to Vietnamese. No-op when the list is empty.

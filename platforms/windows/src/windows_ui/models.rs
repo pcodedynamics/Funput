@@ -2,11 +2,19 @@
 
 use slint::{ModelRc, SharedString, VecModel};
 
-use crate::settings::{ExcludedApp, Hotkey, Shortcut};
+use crate::settings::{ExcludedApp, FlipHotkey, Hotkey, Shortcut};
 use crate::{AppEntry, ShortcutEntry};
 
 pub(super) fn caps(hotkey: Hotkey) -> ModelRc<SharedString> {
-    let rows: Vec<SharedString> = hotkey.caps().iter().map(|c| (*c).into()).collect();
+    keycaps(hotkey.caps())
+}
+
+pub(super) fn flip_caps(hotkey: FlipHotkey) -> ModelRc<SharedString> {
+    keycaps(hotkey.caps())
+}
+
+fn keycaps(caps: &[&'static str]) -> ModelRc<SharedString> {
+    let rows: Vec<SharedString> = caps.iter().map(|c| (*c).into()).collect();
     ModelRc::new(VecModel::from(rows))
 }
 

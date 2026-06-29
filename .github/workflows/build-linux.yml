@@ -36,7 +36,7 @@ jobs:
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install build deps
         run: |
@@ -97,7 +97,7 @@ jobs:
             sha256sum "$f" | awk '{print $1}' > "$OUT/$(basename "$f").sha256"
           done
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: linux-${{ matrix.arch }}
           path: ${{ runner.temp }}/out/*
@@ -131,7 +131,7 @@ jobs:
             ibus-devel glib2-devel \
             gtk4-devel libadwaita-devel librsvg2-devel
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install Rust (rustup, stable)
         run: |
@@ -187,7 +187,7 @@ jobs:
             sha256sum "$f" | awk '{print $1}' > "$OUT/$(basename "$f").sha256"
           done
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: linux-rpm-${{ matrix.arch }}
           path: ${{ runner.temp }}/out/*

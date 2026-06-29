@@ -133,6 +133,21 @@ bool matchesToggle(EngineState *st, guint keyval, guint modifiers) {
     return false;
 }
 
+bool matchesFlip(EngineState *st, guint keyval, guint modifiers) {
+    const bool ctrl = (modifiers & IBUS_CONTROL_MASK) != 0;
+    const bool shift = (modifiers & IBUS_SHIFT_MASK) != 0;
+    if (!ctrl || !shift) return false;
+    switch (st->settings_.flipHotkey) {
+    case funput::FlipHotkey::CtrlShiftZ:
+        return keyval == IBUS_KEY_z || keyval == IBUS_KEY_Z;
+    case funput::FlipHotkey::CtrlShiftX:
+        return keyval == IBUS_KEY_x || keyval == IBUS_KEY_X;
+    case funput::FlipHotkey::Off:
+        return false;
+    }
+    return false;
+}
+
 void toggleEnabled(IBusEngine *engine, EngineState *st) {
     commitBuffer(engine, st); // commit any in-progress word first
     st->effectiveEnabled_ = !st->effectiveEnabled_;
@@ -167,6 +182,13 @@ static gboolean ibus_funput_engine_process_key_event(IBusEngine *engine, guint k
     }
 
     if (!st->effectiveEnabled_) return FALSE; // English mode: pass everything through
+
+    // Flip the word being composed VN↔raw. Checked before the Ctrl-combo guard
+    // below (the flip combo holds Ctrl) and re-renders the preedit in place.
+    if (matchesFlip(st, keyval, modifiers)) {
+        if (st->handle_.flipComposing().action != ACTION_NONE) updatePreedit(engine, st);
+        return TRUE;
+    }
 
     // Keyboard shortcuts (Ctrl/Alt/Super combos) are not text: end composition and
     // let the app handle them.

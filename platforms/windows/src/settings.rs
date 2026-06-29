@@ -117,6 +117,44 @@ impl Hotkey {
     }
 }
 
+/// Hotkey that flips the word being composed between Vietnamese and raw keys
+/// (`card` ⇄ `cải`). Presets use `Ctrl+Shift+<letter>` so they never collide with a
+/// toggle preset; `Off` disables it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FlipHotkey {
+    #[default]
+    Off,
+    CtrlShiftZ,
+    CtrlShiftX,
+}
+
+impl FlipHotkey {
+    pub fn id(self) -> &'static str {
+        match self {
+            FlipHotkey::Off => "off",
+            FlipHotkey::CtrlShiftZ => "ctrl_shift_z",
+            FlipHotkey::CtrlShiftX => "ctrl_shift_x",
+        }
+    }
+    pub fn from_id(id: &str) -> Option<Self> {
+        match id {
+            "off" => Some(FlipHotkey::Off),
+            "ctrl_shift_z" => Some(FlipHotkey::CtrlShiftZ),
+            "ctrl_shift_x" => Some(FlipHotkey::CtrlShiftX),
+            _ => None,
+        }
+    }
+    /// The keycaps shown in the UI, e.g. `["Ctrl", "Shift", "Z"]`.
+    pub fn caps(self) -> &'static [&'static str] {
+        match self {
+            FlipHotkey::Off => &["—"],
+            FlipHotkey::CtrlShiftZ => &["Ctrl", "Shift", "Z"],
+            FlipHotkey::CtrlShiftX => &["Ctrl", "Shift", "X"],
+        }
+    }
+}
+
 /// An app excluded from Vietnamese input. `id` is the lowercased exe file name
 /// (e.g. "code.exe"); `name` is a friendly label for the Settings UI.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -154,6 +192,10 @@ pub struct Settings {
     #[serde(default)]
     pub auto_capitalize: bool,
     pub toggle_hotkey: Hotkey,
+    /// Hotkey to flip the word being composed VN↔raw. `#[serde(default)]` (Off) keeps
+    /// older settings files loadable.
+    #[serde(default)]
+    pub flip_hotkey: FlipHotkey,
     pub launch_at_login: bool,
     pub has_completed_onboarding: bool,
     /// Apps that default to English on focus. `#[serde(default)]` keeps older
@@ -177,6 +219,7 @@ impl Default for Settings {
             spell_check: false,
             auto_capitalize: false,
             toggle_hotkey: Hotkey::CtrlBacktick,
+            flip_hotkey: FlipHotkey::Off,
             launch_at_login: false,
             has_completed_onboarding: false,
             excluded_apps: Vec::new(),

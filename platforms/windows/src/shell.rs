@@ -9,7 +9,7 @@ use std::sync::{Mutex, OnceLock};
 use funput_core::{InputMethod, ToneStyle as CoreToneStyle};
 use funput_engine::{Engine, ImeResult};
 
-use crate::settings::{ExcludedApp, Hotkey, Method, Settings, Shortcut, ToneStyle};
+use crate::settings::{ExcludedApp, FlipHotkey, Hotkey, Method, Settings, Shortcut, ToneStyle};
 
 /// Tag stamped into `dwExtraInfo` of every event we synthesize via `SendInput`, so
 /// the hook can recognize and ignore its own injected keystrokes (no re-entrancy).
@@ -113,6 +113,9 @@ pub fn tone_style() -> CoreToneStyle {
 }
 pub fn toggle_hotkey() -> Hotkey {
     with(|s| s.settings.toggle_hotkey)
+}
+pub fn flip_hotkey() -> FlipHotkey {
+    with(|s| s.settings.flip_hotkey)
 }
 pub fn is_composing() -> bool {
     with(|s| !s.engine.buffer().is_empty())
@@ -264,6 +267,13 @@ pub fn set_toggle_hotkey(hotkey: Hotkey) {
     });
 }
 
+pub fn set_flip_hotkey(hotkey: FlipHotkey) {
+    with(|s| {
+        s.settings.flip_hotkey = hotkey;
+        s.settings.save();
+    });
+}
+
 /// Persist the launch-at-login preference. The registry side effect (auto-launch)
 /// is applied by `commands`, which owns the OS integration.
 pub fn set_launch_at_login(on: bool) {
@@ -397,6 +407,11 @@ pub fn apply_for_app(id: &str) -> Option<bool> {
 
 pub fn process_char(c: char) -> ImeResult {
     with(|s| s.engine.process_char(c))
+}
+
+/// Flip the word being composed VN↔raw; returns the delete+inject to apply.
+pub fn flip_composing() -> ImeResult {
+    with(|s| s.engine.flip_composing())
 }
 
 /// Sync the engine after Backspace while composing; the physical Backspace then

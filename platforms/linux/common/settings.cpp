@@ -56,6 +56,21 @@ static const char *hotkeyStr(Hotkey h) {
     }
 }
 
+static FlipHotkey parseFlipHotkey(const std::string &s) {
+    if (s == "ctrl_shift_z") return FlipHotkey::CtrlShiftZ;
+    if (s == "ctrl_shift_x") return FlipHotkey::CtrlShiftX;
+    return FlipHotkey::Off;
+}
+
+static const char *flipHotkeyStr(FlipHotkey h) {
+    switch (h) {
+    case FlipHotkey::CtrlShiftZ: return "ctrl_shift_z";
+    case FlipHotkey::CtrlShiftX: return "ctrl_shift_x";
+    case FlipHotkey::Off:
+    default: return "off";
+    }
+}
+
 bool Settings::reloadIfChanged() {
     const std::string p = path();
     if (p.empty()) return false;
@@ -91,6 +106,7 @@ bool Settings::reload() {
     spellCheck = j.value("spellCheck", spellCheck);
     autoCapitalize = j.value("autoCapitalize", autoCapitalize);
     toggleHotkey = parseHotkey(j.value("toggleHotkey", std::string(hotkeyStr(toggleHotkey))));
+    flipHotkey = parseFlipHotkey(j.value("flipHotkey", std::string(flipHotkeyStr(flipHotkey))));
 
     // excludedApps: [{ "id": "code", "name": "Code" }, ...] — keep just the ids.
     excludedAppIds.clear();
@@ -118,8 +134,8 @@ bool Settings::reload() {
            enabled != prev.enabled || smartRestore != prev.smartRestore ||
            eagerRestore != prev.eagerRestore || spellCheck != prev.spellCheck ||
            autoCapitalize != prev.autoCapitalize ||
-           toggleHotkey != prev.toggleHotkey || excludedAppIds != prev.excludedAppIds ||
-           shortcuts != prev.shortcuts;
+           toggleHotkey != prev.toggleHotkey || flipHotkey != prev.flipHotkey ||
+           excludedAppIds != prev.excludedAppIds || shortcuts != prev.shortcuts;
 }
 
 bool Settings::isExcluded(const std::string &program) const {
@@ -151,6 +167,7 @@ void Settings::save() const {
     j["spellCheck"] = spellCheck;
     j["autoCapitalize"] = autoCapitalize;
     j["toggleHotkey"] = hotkeyStr(toggleHotkey);
+    j["flipHotkey"] = flipHotkeyStr(flipHotkey);
 
     std::ofstream out(p, std::ios::trunc);
     if (out) out << j.dump(2);
