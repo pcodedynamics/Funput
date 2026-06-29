@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 struct AboutPane: View {
@@ -9,10 +8,7 @@ struct AboutPane: View {
         VStack(spacing: Theme.Spacing.lg) {
             GlassCard {
                 VStack(spacing: Theme.Spacing.md) {
-                    logo
-                        .frame(width: 92, height: 92)
-                        .padding(Theme.Spacing.md)
-                        .glassEffect(.regular, in: .circle)
+                    AppLogo(size: 92)
                         .padding(.bottom, Theme.Spacing.xs)
 
                     VStack(spacing: Theme.Spacing.xs) {
@@ -56,23 +52,6 @@ struct AboutPane: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, Theme.Spacing.md)
             }
-        }
-    }
-
-    /// The app icon (Funput logo); falls back to an SF Symbol if unavailable
-    /// (e.g. in previews).
-    @ViewBuilder private var logo: some View {
-        if let icon = NSApplication.shared.applicationIconImage {
-            Image(nsImage: icon)
-                .resizable()
-                .interpolation(.high)
-                .scaledToFit()
-        } else {
-            Image(systemName: "character.bubble.fill")
-                .resizable()
-                .scaledToFit()
-                .foregroundStyle(.tint)
-                .padding(Theme.Spacing.sm)
         }
     }
 
