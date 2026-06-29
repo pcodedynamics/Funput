@@ -16,6 +16,7 @@
 
 mod boundary;
 mod diff;
+mod flip;
 mod pipeline;
 mod result;
 mod session;
@@ -169,6 +170,29 @@ impl Engine {
         ImeResult::none()
     }
 
+    /// Flip the word being composed between its Vietnamese form and its raw
+    /// keystrokes (`card` ⇄ `cải`), and back on a second call. Returns `true` when
+    /// the composition changed — the host then re-renders [`Self::buffer`] as its
+    /// marked text. `false` (a no-op) when there is nothing to flip: no live
+    /// composition, or the word has no Vietnamese/raw distinction (`the`).
+    ///
+    /// The choice is sticky: further keystrokes keep the chosen form and the word
+    /// boundary won't English-restore it back.
+    pub fn flip_composing(&mut self) -> bool {
+        match flip::flip(
+            &self.session.buffer,
+            &self.session.keys,
+            &self.session.vn_form,
+        ) {
+            Some((buffer, override_)) => {
+                self.session.buffer = buffer;
+                self.session.restore_override = Some(override_);
+                true
+            }
+            None => false,
+        }
+    }
+
     /// Process one Unicode scalar (platform maps keycode → char).
     ///
     /// # Behavior
@@ -235,7 +259,10 @@ mod tests {
     fn engine_struct_size() {
         let bytes = std::mem::size_of::<Engine>();
         println!("size_of::<Engine>() = {bytes} bytes");
-        assert!(bytes < 1024, "engine struct unexpectedly large: {bytes} bytes");
+        assert!(
+            bytes < 1024,
+            "engine struct unexpectedly large: {bytes} bytes"
+        );
     }
 
     #[test]
@@ -480,5 +507,67 @@ mod tests {
         assert_eq!(engine.keys(), "a");
         engine.process_char(' ');
         assert_eq!(engine.keys(), "");
+    }
+
+    #[test]
+    fn flip_eager_restored_word_to_vietnamese_and_back() {
+        // "card" eager-restores to English mid-word (shown as "card"). Flipping
+        // recovers the Vietnamese composition; flipping again returns to raw.
+        let mut engine = Engine::new();
+        type_word(&mut engine, "card");
+        assert_eq!(engine.buffer(), "card"); // shown as raw English
+
+        assert!(engine.flip_composing());
+        let vn = engine.buffer().to_string();
+        assert_ne!(vn, "card"); // now the Vietnamese form
+
+        assert!(engine.flip_composing());
+        assert_eq!(engine.buffer(), "card"); // back to raw
+    }
+
+    #[test]
+    fn flip_to_vietnamese_sticks_across_word_boundary() {
+        // After flipping "card" to Vietnamese, Space must not restore it to English.
+        let mut engine = Engine::new();
+        type_word(&mut engine, "card");
+        engine.flip_composing();
+        let vn = engine.buffer().to_string();
+
+        let boundary = engine.process_char(' ');
+        // No restore fired (the flip is sticky), so the boundary just passes through.
+        assert_eq!(boundary.action, Action::None);
+        // The next composition starts clean.
+        assert_eq!(engine.buffer(), "");
+        assert_ne!(vn, "card");
+    }
+
+    #[test]
+    fn flip_kept_vietnamese_word_to_raw() {
+        // "má" is valid Vietnamese; flipping shows the raw keys "mas".
+        let mut engine = Engine::new();
+        type_word(&mut engine, "mas");
+        assert_eq!(engine.buffer(), "má");
+        assert!(engine.flip_composing());
+        assert_eq!(engine.buffer(), "mas");
+    }
+
+    #[test]
+    fn flip_is_noop_without_a_flippable_word() {
+        let mut engine = Engine::new();
+        assert!(!engine.flip_composing()); // nothing composing
+        type_word(&mut engine, "the"); // composes to itself — no VN/raw distinction
+        assert!(!engine.flip_composing());
+        assert_eq!(engine.buffer(), "the");
+    }
+
+    #[test]
+    fn flip_choice_resets_after_the_word_commits() {
+        // The override is per-word: a fresh word restores normally again.
+        let mut engine = Engine::new();
+        type_word(&mut engine, "card");
+        engine.flip_composing(); // force Vietnamese
+        engine.process_char(' '); // commit + clear
+        type_word(&mut engine, "card"); // a new word
+        assert_eq!(engine.buffer(), "card"); // eager-restored again, override gone
     }
 }

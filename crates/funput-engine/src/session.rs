@@ -4,6 +4,8 @@ use std::collections::HashMap;
 
 use funput_core::{InputMethod, ToneStyle};
 
+use crate::flip::RestoreOverride;
+
 /// Mutable session held by [`crate::Engine`]. Internal — not part of the public API.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Session {
@@ -42,6 +44,14 @@ pub(crate) struct Session {
     /// case-sensitively against `keys` at a word boundary, before English restore.
     /// Config that lives for the whole session — `clear()` does not touch it.
     pub(crate) shortcuts: HashMap<String, String>,
+    /// The composed Vietnamese form of the current word, captured each keystroke
+    /// *before* an eager English-restore can collapse `buffer` to the raw keys. Lets
+    /// the flip hotkey recover the Vietnamese form even after a restore. Per-word —
+    /// reset by `clear()`.
+    pub(crate) vn_form: String,
+    /// A manual flip choice for the current word: pins the displayed form and keeps
+    /// the word boundary from English-restoring it back. Per-word — reset by `clear()`.
+    pub(crate) restore_override: Option<RestoreOverride>,
 }
 
 impl Session {
@@ -59,12 +69,16 @@ impl Session {
             cap_sentence_ended: false,
             cap_armed: false,
             shortcuts: HashMap::new(),
+            vn_form: String::new(),
+            restore_override: None,
         }
     }
 
     pub(crate) fn clear(&mut self) {
         self.buffer.clear();
         self.keys.clear();
+        self.vn_form.clear();
+        self.restore_override = None;
     }
 }
 
@@ -105,6 +119,9 @@ mod tests {
         session.shortcuts.insert("vn".into(), "Việt Nam".into());
         session.buffer.push('á');
         session.clear();
-        assert_eq!(session.shortcuts.get("vn").map(String::as_str), Some("Việt Nam"));
+        assert_eq!(
+            session.shortcuts.get("vn").map(String::as_str),
+            Some("Việt Nam")
+        );
     }
 }

@@ -207,6 +207,17 @@ void funput_clear_shortcuts(FunputEngine *engine);
  */
 FunputResult funput_backspace(FunputEngine *engine);
 
+/**
+ * Flip the word being composed between its Vietnamese form and its raw keystrokes
+ * (`card` ⇄ `cải`), and back on a second call. Returns `true` when the composition
+ * changed — the host then re-renders the marked text from [`funput_buffer`]; `false`
+ * (a no-op) when there is nothing to flip.
+ *
+ * # Safety
+ * `engine` must be a valid handle or null.
+ */
+bool funput_flip_composing(FunputEngine *engine);
+
 #ifdef __cplusplus
 }  // extern "C"
 #endif  // __cplusplus
