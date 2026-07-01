@@ -92,6 +92,15 @@ pub(crate) fn apply_shape_key(buffer: &str, shape: VowelShape) -> TransformResul
         return ignored(buffer);
     };
 
+    // Carry any tone already on the vowel across the shape change — `apply_shape_to_vowel`
+    // drops it (it shapes the bare stem). This makes the mark order free: shaping a
+    // toned vowel keeps the tone (`asw` → `ắ`, not `ă`; `uasw` → `ứa`), matching the
+    // usual shape-then-tone order and VNI's position-free modifiers.
+    let shaped = match tone_on_vowel(vowel) {
+        Some(tone) => apply_tone_to_vowel(shaped, tone).unwrap_or(shaped),
+        None => shaped,
+    };
+
     TransformResult {
         kind: TransformKind::Applied,
         text: replace_char_at(buffer, vowel_idx, shaped),

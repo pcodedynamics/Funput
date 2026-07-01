@@ -307,6 +307,49 @@ mod tests {
     }
 
     #[test]
+    fn shape_after_tone_keeps_tone() {
+        // Applying a shape to an already-toned vowel must keep the tone, so the mark
+        // order is free (shape-then-tone and tone-then-shape agree).
+        // Telex:
+        assert_eq!(type_telex("asw", false), "ắ"); // á + breve → ắ (not ă)
+        assert_eq!(type_telex("aws", false), "ắ"); // breve + á → ắ (same result)
+        assert_eq!(type_telex("osw", false), "ớ"); // ó + horn → ớ (keeps sắc)
+        // VNI (position-free digits) gets the same benefit:
+        assert_eq!(type_keys("a18"), "ắ"); // á + 8 (breve) → ắ
+        assert_eq!(type_keys("o17"), "ớ"); // ó + 7 (horn) → ớ
+        assert_eq!(type_keys("a16"), "ấ"); // á + 6 (circumflex) → ấ
+    }
+
+    #[test]
+    fn telex_ua_rhyme_horns_u() {
+        // `w` after a plain `ua` forms the `ưa` rhyme (horn on `u`), so the horn can
+        // be placed last: `nuawx` → `nữa`, same as `nuwax`.
+        assert_eq!(type_telex("nuawx", false), "nữa");
+        assert_eq!(type_telex("nuwax", false), "nữa");
+        assert_eq!(type_telex("muaw", false), "mưa");
+        assert_eq!(type_telex("dduaw", false), "đưa");
+        // `qu` glide is untouched: `a` takes the breve (`quăng`).
+        assert_eq!(type_telex("quawng", false), "quăng");
+        // The plain `ua` rhyme (no `w`) still composes normally (`múa`, not `mứa`).
+        assert_eq!(type_telex("muas", false), "múa");
+    }
+
+    #[test]
+    fn telex_ua_horn_keeps_tone_and_reverts() {
+        // #2: a tone already on the `u` is kept when the horn lands (`úa` → `ứa`),
+        // so `ua` + tone + `w` composes the same as `ua` + `w` + tone.
+        assert_eq!(type_telex("uasw", false), "ứa");
+        assert_eq!(type_telex("uaws", false), "ứa");
+        assert_eq!(type_telex("cuawr", false), "cửa"); // cửa (door)
+        // #1: a repeat `w` reverts the horn even when it sits on `ư` (not the last
+        // char), giving back `ua` plus the literal `w`, not a stray breve on `a`.
+        assert_eq!(type_telex("nuaww", false), "nuaw");
+        assert_eq!(type_telex("muaww", false), "muaw");
+        // `qu` glide is still breve-and-revert on the `a`, untouched by the `ua` rule.
+        assert_eq!(type_telex("quaww", false), "quaw");
+    }
+
+    #[test]
     fn reposition_and_complex() {
         assert_eq!(type_keys("hoa2"), "hòa");
         assert_eq!(type_keys("thuy3"), "thủy");

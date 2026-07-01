@@ -69,6 +69,33 @@ fn is_plain_vowel(c: char, base: char) -> bool {
         && shape_on_vowel(c).is_none()
 }
 
+/// Whether the buffer ends in a `ua`-family cluster (`u`/`ú`/`ư` + `a`) on which a
+/// `w` should act on the `u` slot rather than putting a breve on the `a` — there is
+/// no `uă` rhyme. All three cases resolve through the shared apply/revert layer once
+/// `classify_w` returns [`VowelShape::Horn`]:
+///
+/// - plain `ua` → horn the `u`, forming `ưa` (`mua` + `w` → `mưa`, `nua` → `nưa`)
+/// - toned `úa` → horn the `u`, keeping the tone (`úa` + `w` → `ứa`)
+/// - already-horned `ưa` → a repeat `w` reverts it (`nưa` + `w` → `nua`)
+///
+/// The `qu` glide is excluded: there the `u` belongs to the onset and the `a` takes
+/// the breve (`qua` + `w` → `quă`), mirroring the `uo` → `ươ` compound rule.
+fn ends_with_ua_horn_target(buffer: &str) -> bool {
+    let mut rev = buffer.chars().rev();
+    if !rev.next().is_some_and(|a| is_plain_vowel(a, 'a')) {
+        return false;
+    }
+    // The `u` slot: any `u`- or `ư`-based vowel (plain, toned, or already horned).
+    let is_u_slot = rev
+        .next()
+        .and_then(vowel_stem)
+        .is_some_and(|stem| matches!(stem, 'u' | 'U' | 'ư' | 'Ư'));
+    if !is_u_slot {
+        return false;
+    }
+    !matches!(rev.next(), Some('q' | 'Q'))
+}
+
 fn classify_w(buffer: &str) -> Option<KeyAction> {
     if uo_pair_in_vowel_cluster(buffer).is_some() {
         return Some(KeyAction::Shape(VowelShape::Horn));
@@ -88,7 +115,14 @@ fn classify_w(buffer: &str) -> Option<KeyAction> {
             };
         }
         if is_plain_vowel(last, 'a') {
-            return Some(KeyAction::Shape(VowelShape::Breve));
+            // A `ua`-family cluster horns the `u` (→ `ưa`, and a repeat `w` reverts
+            // it); a bare or `oa` `a` takes the breve.
+            let shape = if ends_with_ua_horn_target(buffer) {
+                VowelShape::Horn
+            } else {
+                VowelShape::Breve
+            };
+            return Some(KeyAction::Shape(shape));
         }
         if is_plain_vowel(last, 'o') || is_plain_vowel(last, 'u') {
             return Some(KeyAction::Shape(VowelShape::Horn));
@@ -301,6 +335,28 @@ mod tests {
         assert_eq!(classify_key("mo", 'w'), KeyAction::Shape(VowelShape::Horn));
         // `i` alone has no shapeable vowel → literal.
         assert_eq!(classify_key("mi", 'w'), KeyAction::Normal);
+    }
+
+    #[test]
+    fn classify_w_on_ua_horns_the_u() {
+        // Plain `ua` + `w` forms the `ưa` rhyme by horning the `u`, not a breve on
+        // the `a` (there is no `uă` rhyme): `nua` + `w` → `nưa` (→ `nữa`),
+        // `mua` + `w` → `mưa`, `ngua` + `w` → `ngưa`.
+        assert_eq!(classify_key("nua", 'w'), KeyAction::Shape(VowelShape::Horn));
+        assert_eq!(classify_key("mua", 'w'), KeyAction::Shape(VowelShape::Horn));
+        assert_eq!(classify_key("ngua", 'w'), KeyAction::Shape(VowelShape::Horn));
+        assert_eq!(classify_key("ua", 'w'), KeyAction::Shape(VowelShape::Horn));
+        // `qu` glide: the `u` is part of the onset, so the `a` takes the breve.
+        assert_eq!(classify_key("qua", 'w'), KeyAction::Shape(VowelShape::Breve));
+        assert_eq!(classify_key("Qua", 'w'), KeyAction::Shape(VowelShape::Breve));
+        // `oa` still breves the `a` (`xoăn`), unaffected by the `ua` rule.
+        assert_eq!(classify_key("hoa", 'w'), KeyAction::Shape(VowelShape::Breve));
+        // Toned `u` still classifies as horn (the apply layer keeps the tone → `ứa`).
+        assert_eq!(classify_key("úa", 'w'), KeyAction::Shape(VowelShape::Horn));
+        // Already-horned `ưa` classifies as horn too — the transform layer sees no
+        // apply target and reverts it (`nưa` + `w` → `nua`).
+        assert_eq!(classify_key("nưa", 'w'), KeyAction::Shape(VowelShape::Horn));
+        assert_eq!(classify_key("ưa", 'w'), KeyAction::Shape(VowelShape::Horn));
     }
 
     #[test]
