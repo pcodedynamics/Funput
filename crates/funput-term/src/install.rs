@@ -11,8 +11,8 @@ use std::path::PathBuf;
 
 /// Start/end markers delimiting the block we own in the rc file, so `--write`
 /// stays idempotent and the block is easy to find or remove by hand.
-const MARKER_START: &str = "# >>> funput-term >>>";
-const MARKER_END: &str = "# <<< funput-term <<<";
+const MARKER_START: &str = "# >>> funput term >>>";
+const MARKER_END: &str = "# <<< funput term <<<";
 
 /// Supported shells, distinguished only by alias syntax and rc-file location.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -44,14 +44,14 @@ impl Shell {
     fn alias_line(self, name: &str, command: &str) -> String {
         match self {
             // POSIX-style quoting for bash/zsh; fish uses a space, not `=`.
-            Shell::Bash | Shell::Zsh => format!("alias {name}='funput-term -- {command}'"),
-            Shell::Fish => format!("alias {name} 'funput-term -- {command}'"),
+            Shell::Bash | Shell::Zsh => format!("alias {name}='funput term -- {command}'"),
+            Shell::Fish => format!("alias {name} 'funput term -- {command}'"),
         }
     }
 }
 
 /// Parse an `name=command` argument; a bare `name` aliases the command of the same
-/// name (`claude` → `claude`→`funput-term -- claude`).
+/// name (`claude` → `claude`→`funput term -- claude`).
 pub fn parse_alias(arg: &str) -> (String, String) {
     match arg.split_once('=') {
         Some((name, command)) => (name.to_string(), command.to_string()),
@@ -70,7 +70,7 @@ pub fn snippet(shell: Shell, aliases: &[(String, String)]) -> String {
         out.push_str("# Example: add `--alias claude` to wrap a command, e.g.\n");
         out.push_str(&format!("#   {}\n", shell.alias_line("claude", "claude")));
         out.push_str("# Or wrap your whole shell from your terminal emulator:\n");
-        out.push_str("#   funput-term -- $SHELL\n");
+        out.push_str("#   funput term -- $SHELL\n");
     } else {
         for (name, command) in aliases {
             out.push_str(&shell.alias_line(name, command));
@@ -106,7 +106,7 @@ pub fn run(shell: Shell, aliases: &[(String, String)], write: bool) -> io::Resul
         .ok_or_else(|| io::Error::other("cannot determine home directory for rc file"))?;
     let existing = std::fs::read_to_string(&path).unwrap_or_default();
     if existing.contains(MARKER_START) {
-        println!("funput-term: already installed in {}", path.display());
+        println!("funput term: already installed in {}", path.display());
         return Ok(());
     }
 
@@ -119,7 +119,7 @@ pub fn run(shell: Shell, aliases: &[(String, String)], write: bool) -> io::Resul
         .open(&path)?;
     // Separate from any preceding content.
     writeln!(file, "\n{block}")?;
-    println!("funput-term: installed in {}", path.display());
+    println!("funput term: installed in {}", path.display());
     println!("Restart your shell or run `source {}`.", path.display());
     Ok(())
 }
@@ -135,14 +135,14 @@ mod tests {
     #[test]
     fn bash_zsh_use_equals_quoting() {
         let s = snippet(Shell::Zsh, &aliases());
-        assert!(s.contains("alias claude='funput-term -- claude'"));
+        assert!(s.contains("alias claude='funput term -- claude'"));
         assert!(s.contains(MARKER_START) && s.contains(MARKER_END));
     }
 
     #[test]
     fn fish_uses_space_syntax() {
         let s = snippet(Shell::Fish, &aliases());
-        assert!(s.contains("alias claude 'funput-term -- claude'"));
+        assert!(s.contains("alias claude 'funput term -- claude'"));
     }
 
     #[test]

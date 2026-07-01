@@ -11,5 +11,6 @@ path = "src/main.rs"
 [dependencies]
 funput-core = { path = "../funput-core" }
 funput-engine = { path = "../funput-engine" }
+funput-term = { path = "../funput-term" }
 clap = { version = "4", features = ["derive"] }
 unicode-normalization = "0.1.25"

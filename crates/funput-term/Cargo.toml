@@ -4,14 +4,9 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[[bin]]
-name = "funput-term"
-path = "src/main.rs"
-
 [dependencies]
 funput-core = { path = "../funput-core" }
 funput-engine = { path = "../funput-engine" }
-clap = { version = "4.6.1", features = ["derive"] }
 portable-pty = "0.9"
 crossterm = "0.29"
 serde = { version = "1.0.228", features = ["derive"] }

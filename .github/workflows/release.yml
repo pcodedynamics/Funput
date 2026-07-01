@@ -167,3 +167,29 @@ jobs:
           else
             gh release edit "$TAG" --draft=false --latest
           fi
+
+  # ---- Trigger the Homebrew tap to build + publish bottles ------------------
+  # Fires only for a real public release (not prereleases/smoke tests). The tap's
+  # `bottle.yml` builds `funput` for macOS arm64 + x86_64 and commits the updated
+  # `bottle do` block. Requires a `HOMEBREW_TAP_TOKEN` secret (a PAT with `contents:
+  # write` on Funput/homebrew-tap); skipped automatically if the secret is absent.
+  homebrew:
+    needs: [version, publish]
+    if: needs.version.outputs.prerelease == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch bottle build to Funput/homebrew-tap
+        env:
+          TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${TOKEN:-}" ]]; then
+            echo "HOMEBREW_TAP_TOKEN not set — skipping tap update." >&2
+            exit 0
+          fi
+          curl -fsS -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            https://api.github.com/repos/Funput/homebrew-tap/dispatches \
+            -d "{\"event_type\":\"release\",\"client_payload\":{\"version\":\"${VERSION}\"}}"
